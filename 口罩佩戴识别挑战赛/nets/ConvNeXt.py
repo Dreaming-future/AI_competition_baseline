@@ -171,21 +171,14 @@ def convnext_tiny(num_classes: int):
         url=url, map_location="cpu", check_hash=True
     )
     model.load_state_dict(checkpoint["model"])
-    
+    inchannel = model.norm.normalized_shape[0]
+    model.head = nn.Sequential(*[nn.Linear(inchannel,num_classes)])
 
-    # for param in model.parameters():
-    #     param.requires_grad = False
-    # inchannel = model.norm.in_features
-    # net = convnext_base(21841)
-    model.head = nn.Sequential(*[nn.Linear(768,num_classes)])
-    # 固定卷积层参数
-    # for param in model.head.parameters():
-    #     param.requires_grad = True
-    
-    return model
+    return model              
 
 
-def convnext_small(num_classes: int):
+
+def convnext_small(num_classes = 1000):
     url = 'https://dl.fbaipublicfiles.com/convnext/convnext_small_1k_224_ema.pth'
     model = ConvNeXt(depths=[3, 3, 27, 3],
                      dims=[96, 192, 384, 768],
@@ -195,19 +188,12 @@ def convnext_small(num_classes: int):
         url=url, map_location="cpu", check_hash=True
     )
     model.load_state_dict(checkpoint["model"])
-
-    for param in model.parameters():
-        param.requires_grad = False
-
-    # net = convnext_base(21841)
-    inchannel = model.norm.in_features
+    inchannel = model.norm.normalized_shape[0]
     model.head = nn.Sequential(*[nn.Linear(inchannel,num_classes)])
-    # 固定卷积层参数
-    for param in model.head.parameters():
-        param.requires_grad = True
-    
+
     return model              
 
+convnext_small(3)
 
 def convnext_base(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth
@@ -219,9 +205,8 @@ def convnext_base(num_classes: int):
         url=url, map_location="cpu", check_hash=True
     )
     model.load_state_dict(checkpoint["model"])
-
-    # net = convnext_base(21841)
-    model.head = nn.Sequential(*[nn.Linear(1024,num_classes)])
+    inchannel = model.norm.normalized_shape[0]
+    model.head = nn.Sequential(*[nn.Linear(inchannel,num_classes)])
    
     return model
 
@@ -237,10 +222,9 @@ def convnext_large(num_classes: int):
     checkpoint = torch.hub.load_state_dict_from_url(
         url=url, map_location="cpu", check_hash=True
     )
-    # from torchinfo import summary
-    # summary(model,(2,3,224,224))
     model.load_state_dict(checkpoint["model"])
-    model.head = nn.Sequential(*[nn.Linear(1536,num_classes)])    
+    inchannel = model.norm.normalized_shape[0]
+    model.head = nn.Sequential(*[nn.Linear(inchannel,num_classes)])
 
     return model
 
@@ -254,5 +238,6 @@ def convnext_xlarge(num_classes: int):
         url=url, map_location="cpu", check_hash=True
     ) 
     model.load_state_dict(checkpoint["model"])
-    model.head = nn.Sequential(*[nn.Linear(2048,num_classes)])    
+    inchannel = model.norm.normalized_shape[0]
+    model.head = nn.Sequential(*[nn.Linear(inchannel,num_classes)])
     return model
