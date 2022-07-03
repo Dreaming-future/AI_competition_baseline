@@ -8,9 +8,9 @@ import torch.nn.functional as F
 class Prediction():
     def __init__(self):
         super(Prediction, self).__init__()
-        # 利用ImageNet的标准差和方差
-        image_mean = [0.38753143, 0.36847523, 0.27735737]
-        image_std = [0.2023, 0.1994, 0.2010]
+        # 利用数据集的标准差和方差
+        image_mean = [0.4940, 0.4187, 0.3855]
+        image_std = [0.2048, 0.1941, 0.1932]
         # 不进行数据增强的transforms
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
@@ -99,5 +99,5 @@ if __name__ == '__main__':
     root = './data/test//' # 文件夹的路径
     num_classes = 3 # 类别
 
-    net = 'ConvNeXt-L'
+    net = 'ConvNeXt-XL'
     save_csv(path = 'submit_{}.csv'.format(net),net = net)
