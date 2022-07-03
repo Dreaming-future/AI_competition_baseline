@@ -8,6 +8,7 @@ def get_training_dataloader(batch_size = 64, num_workers = 4, shuffle = True, re
     transform_train = transforms.Compose([
         transforms.Resize(resize),
         transforms.RandomCrop(resize, padding=4),
+        transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
