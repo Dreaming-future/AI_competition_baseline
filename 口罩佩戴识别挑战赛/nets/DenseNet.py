@@ -134,16 +134,10 @@ import torchvision.models as models
 def DenseNet121(num_classes = 1000):
     # return DenseNet([6,12,24,16], growth_rate=32)
     densenet121 = models.densenet121(pretrained=True)
-
-    # for param in densenet121.parameters():
-        # param.requires_grad = False
         
     inchannel = densenet121.classifier.in_features
     densenet121.classifier = nn.Linear(inchannel, num_classes)
-    
-    # for param in densenet121.classifier.parameters():
-        # param.requires_grad = True
-        
+
     return densenet121
 
 def DenseNet169(num_classes):

@@ -176,8 +176,14 @@ def ResNet101(classes=1000,verbose=False):
       
     return resnet101
 
-def ResNet152(verbose=False):
-    return ResNet(Bottleneck, [3,8,36,3],verbose=verbose)
+def ResNet152(classes=1000,verbose=False):
+    # return ResNet(Bottleneck, [3,8,36,3],verbose=verbose)
+    resnet101 = models.resnet101(pretrained=True)
+      
+    inchannel = resnet101.fc.in_features
+    resnet101.fc = nn.Linear(inchannel, classes)
+      
+    return resnet101
 
 def test():
     net = ResNet50(10)

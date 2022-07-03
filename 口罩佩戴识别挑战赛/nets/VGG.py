@@ -61,5 +61,20 @@ def test():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     net = net.to(device)
     summary(net,(2,3,32,32))
-    
 # test()
+
+import torchvision.models as models
+
+def VGG16_bn(num_classes = 1000):
+    model = models.vgg16_bn(pretrained=True)
+    inchannel = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(inchannel, num_classes)
+
+    return model
+
+def VGG19_bn(num_classes = 1000):
+    model = models.vgg19_bn(pretrained=True)
+    inchannel = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(inchannel, num_classes)
+
+    return model
