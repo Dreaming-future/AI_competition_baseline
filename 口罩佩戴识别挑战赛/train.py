@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 
 import os
 import argparse
-from utils import get_acc,EarlyStopping
+from utils import get_acc,EarlyStopping,remove_prefix
 from dataloader import get_test_dataloader, get_training_dataloader
 from tqdm import tqdm
 
@@ -19,14 +19,17 @@ from tqdm import tqdm
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-    parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
+    parser.add_argument('--lr', default=0.004, type=float, help='learning rate')
     parser.add_argument('--cuda', action='store_true', default=False, help =' use GPU?')
     parser.add_argument('--batch-size', default=64, type=int, help = "Batch Size for Training")
     parser.add_argument('--num-workers', default=4, type=int, help = 'num-workers')
-    parser.add_argument('--net', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19','ResNet50','ResNet34',   
+    parser.add_argument('--net', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
+                                                       'ResNet34','ResNet50','ResNet101',   
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
-                                                       'MobileNetv1','MobileNetv2','ResNeXt',
-                                                       'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL'], default='MobileNetv2', help='net type')
+                                                       'MobileNetv1','MobileNetv2',
+                                                       'ResNeXt50_32x4d','ResNeXt101_32x8d',
+                                                       'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
+                                                       'ViT-B','ViT-L','ViT-H','Swin-L'], default='MobileNetv2', help='net type')
     parser.add_argument('--epochs', type = int, default=20, help = 'Epochs')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--patience', '-p', type = int, default=7, help='patience for Early stop')
@@ -63,6 +66,9 @@ if __name__ == '__main__':
     elif args.net == 'ResNet34':
         from nets.ResNet import ResNet34
         net = ResNet34(num_classes)
+    elif args.net == 'ResNet101':
+        from nets.ResNet import ResNet101
+        net = ResNet101(num_classes)
     elif args.net == 'LeNet5':
         from nets.LeNet5 import LeNet5
         net = LeNet5(num_classes)
@@ -87,9 +93,12 @@ if __name__ == '__main__':
     elif args.net == 'MobileNetv2':
         from nets.MobileNetv2 import MobileNetV2
         net = MobileNetV2(num_classes)
-    elif args.net == 'ResNeXt':
-        from nets.ResNeXt import ResNeXt50
-        net = ResNeXt50(num_classes)
+    elif args.net == 'ResNeXt50_32x4d':
+        from nets.ResNeXt import ResNeXt50_32x4d
+        net = ResNeXt50_32x4d(num_classes)
+    elif args.net == 'ResNeXt101_32x8d':
+        from nets.ResNeXt import ResNeXt101_32x8d
+        net = ResNeXt101_32x8d(num_classes)
     elif args.net == 'ConvNeXt-T':
         from nets.ConvNeXt import convnext_tiny
         net = convnext_tiny(num_classes)
@@ -105,11 +114,37 @@ if __name__ == '__main__':
     elif args.net == 'ConvNeXt-XL':
         from nets.ConvNeXt import convnext_xlarge
         net = convnext_xlarge(num_classes)
+    elif args.net == 'ViT-B':
+        from nets.ViT import Vit_bash_patch16_224
+        net = Vit_bash_patch16_224(num_classes)
+    elif args.net == 'ViT-L':
+        from nets.ViT import Vit_large_patch16_224
+        net = Vit_large_patch16_224(num_classes)
+    elif args.net == 'ViT-H':
+        from nets.ViT import Vit_huge_patch14_224
+        net = Vit_huge_patch14_224(num_classes)
+    elif args.net == 'Swin-L':
+        from nets.Swin import swin_large_patch4_window7_224
+        net = swin_large_patch4_window7_224(3)
+
+    if args.resume:
+        # Load checkpoint.
+        print('==> Resuming from checkpoint..')
+        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+        
+        checkpoint = torch.load('./checkpoint/{}_ckpt.pth'.format(args.net))
+        checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(args.net))
+        # net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint_best['acc']
+        start_epoch = checkpoint['epoch']
+        args.lr = checkpoint['lr']
+        print("从{} 开始训练， 学习率为 {} , 最佳的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc))
 
 
     if args.cuda:
         device = 'cuda'
-        # net = torch.nn.DataParallel(net)
+        net = torch.nn.DataParallel(net)
         net = net.to(device)
         # 当计算图不会改变的时候（每次输入形状相同，模型不改变）的情况下可以提高性能，反之则降低性能
         torch.backends.cudnn.benchmark = True
@@ -120,19 +155,6 @@ if __name__ == '__main__':
     # from torchinfo import summary
     # summary(net,(2,3,224,224))
     
-    if args.resume:
-        # Load checkpoint.
-        print('==> Resuming from checkpoint..')
-        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        
-        checkpoint = torch.load('./checkpoint/{}_ckpt.pth'.format(args.net))
-        checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(args.net))
-        net.load_state_dict(checkpoint['net'])
-        best_acc = checkpoint_best['acc']
-        start_epoch = checkpoint['epoch']
-        args.lr = checkpoint['lr']
-        print("从{} 开始训练， 学习率为 {} , 最佳的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc))
-
     early_stopping = EarlyStopping(patience = args.patience, verbose=True)
     criterion = nn.CrossEntropyLoss()
     if args.optim == 'adamw':
@@ -143,7 +165,10 @@ if __name__ == '__main__':
         optimizer = optim.SGD(net.parameters(), lr=args.lr,
                         momentum=0.9, weight_decay=5e-4)
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.94,verbose=True,patience = 1,min_lr = 0.000001) # 动态更新学习率
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [30,40], gamma=0.1)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=0.85)
+    # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [30], gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+
     epochs = args.epochs
     def train(epoch,trainloader):
         epoch_step = len(trainloader)
@@ -279,16 +304,22 @@ if __name__ == '__main__':
             print("Early stopping")
             # 结束模型训练
             exit()
-    
+    # print(net)
     flag = False # 标志只需要做一次操作即可，后续加载数据不需要多次操作
     for epoch in range(start_epoch, epochs):
         if freeze and not flag:
             if epoch < freeze_epoch:
                 for param in net.parameters():
                     param.requires_grad = False
-
-                for param in net.head.parameters():
-                    param.requires_grad = True
+                if 'ConvNeXt' or 'ViT' in args.net:
+                    for param in net.head.parameters():
+                        param.requires_grad = True
+                elif 'ResNeXt' in args.net:
+                    for param in net.fc.parameters():
+                        param.requires_grad = True
+                else:
+                    for param in net.classifier.parameters():
+                        param.requires_grad = True
             else:
                 flag = True
                 for param in net.parameters():
