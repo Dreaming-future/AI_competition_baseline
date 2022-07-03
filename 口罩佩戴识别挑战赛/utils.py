@@ -4,14 +4,18 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-
+'''
+top1准确率
+'''
 def eval_top1(outputs, label):
     total = outputs.shape[0]
     outputs = torch.softmax(outputs, dim=-1)
     _, pred_y = outputs.data.max(dim=1) # 得到概率
     correct = (pred_y == label).sum().data
     return correct / total
-
+'''
+top5准确率
+'''
 def eval_top5(outputs, label):
     total = outputs.shape[0]
     outputs = torch.softmax(outputs, dim=-1)
@@ -37,14 +41,16 @@ def get_mean_and_std(dataset):
     std.div_(len(dataset))
     return mean, std
 
-
+'''
+得到准确率ACC
+'''
 def get_acc(outputs, label):
     total = outputs.shape[0]
     probs, pred_y = outputs.data.max(dim=1) # 得到概率
     correct = (pred_y == label).sum().data
     return correct / total
 
-
+# 早停策略
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(self, patience=7, verbose=False, delta=0):
@@ -86,7 +92,7 @@ class EarlyStopping:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         # torch.save(model.state_dict(), 'checkpoint.pt')	# 这里会存储迄今最优模型的参数
         self.val_loss_min = val_loss
-
+# 之前写的旧的训练函数
 def train(net, trainloader, testloader, epoches, optimizer , criterion, scheduler , path = './model.pth', writer = None ,verbose = False):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     best_acc = 0
@@ -312,7 +318,9 @@ def train2(net, trainloader, testloader, epoches, optimizer , criterion, schedul
     Loss['test_loss'] = test_loss_list
     Lr = lr_list
     return Acc, Loss, Lr
-
+'''
+配合旧的训练函数，打印结果
+'''
 def plot_history(epoches, Acc, Loss, lr):
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.rcParams['image.interpolation'] = 'nearest'
