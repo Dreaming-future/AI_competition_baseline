@@ -15,15 +15,14 @@ from dataloader import get_test_dataloader, get_training_dataloader
 from tqdm import tqdm
 
 # CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda 
-classes = ('plane', 'car', 'bird', 'cat', 'deer',
-           'dog', 'frog', 'horse', 'ship', 'truck')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
     parser.add_argument('--cuda', action='store_true', default=False, help =' use GPU?')
     parser.add_argument('--batch-size', default=64, type=int, help = "Batch Size for Training")
-    parser.add_argument('--num-workers', default=2, type=int, help = 'num-workers')
+    parser.add_argument('--num-workers', default=4, type=int, help = 'num-workers')
     parser.add_argument('--net', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19','ResNet50','ResNet34',   
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2','ResNeXt',
