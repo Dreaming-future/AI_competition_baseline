@@ -1,0 +1,2 @@
+# AI_competition_baseline
+记录竞赛的baseline，以及后期进行改进的思路和方法，统筹到一个github中
