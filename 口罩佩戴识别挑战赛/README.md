@@ -83,28 +83,102 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 - [x] MobileNetv2测试
 - [x] DenseNet169及DenseNet201
 - [x] ConvNeXt-B、ConvNeXt-L
-- [ ] ViT
+- [x] ViT
 - [ ] Swim-Transformer
 - [ ] EfficientNetv1、v2
 
 ### 尝试Tricks
 
-- [ ] 尝试多用数据增强
-- [ ] 尝试用现有的权重进行迁移学习
+- [x] 尝试多用数据增强
+- [x] 尝试用现有的权重进行迁移学习
 - [ ] 尝试利用LabelSmooth的损失
 - [ ] 尝试用多模型集成，模型融合等方法
 - [ ] 尝试K-Fold验证训练方法
 - [ ] 尝试改变图像的分辨率，原先是224x224
+- [ ] 
 
 
 
 ### 部分尝试结果
 
-- [ ] 对于ConvNeXt来说，如果不是微调，也就是对于大的ConvNeXt来说，可能由于数据量太小，所以导致，我们如果对整个网络进行训练，得到的结果并不是很好，但是如果我们固定卷积层，只留下分类层进行训练，我们对此进行微调，我们得到的结果会出奇的好，训练50次以后，我们可以得到96.905%的结果。
+- [x] 对于ConvNeXt来说，如果不是微调，也就是对于大的ConvNeXt来说，可能由于数据量太小，所以导致，我们如果对整个网络进行训练，得到的结果并不是很好，但是如果我们固定卷积层，只留下分类层进行训练，我们对此进行微调，我们得到的结果会出奇的好，训练50次以后，我们可以得到96.905%的结果。
 
   我也发现，ConvNeXt-B和ConvNeXt-L得到的结果是类似的。这一部分的修改可能是从模型集成，或者寻找更好的模型和Tricks进行修改。
 
-- [ ] 
+- [x] 使用timm的库，里面含有多个预训练的模型，利用里面的Transformer模型进行训练，其中也有EfficientNetv1，v2等等
+
+- [ ] ViT效果一般，可能在少量数据集上，需要训练大量数据和大量时间才能得到更好的结果
+
+  Swin-L还是能得到很不错的结果，在一开始的就可以得到不错结果
+
+
+
+### 详细参数以及运行
+
+**数据增强处理**
+
+```bash
+transform_train = transforms.Compose([
+        transforms.Resize(resize),
+        transforms.RandomCrop(resize, padding=4),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(image_mean, image_std),
+    ])
+```
+
+
+
+**DenseNet169**
+
+96.75412747640252 %
+
+```bash
+CUDA_VISIBLE_DEVICES=2 python train.py -f --cuda --net DenseNet169 --num-workers 8 --epochs 50 -fe 20
+```
+
+**ConvNeXt-T**
+
+100%
+
+```bash
+CUDA_VISIBLE_DEVICES=2 python train.py -f --cuda --net ConvNeXt-T --num-workers 8 --epochs 50 -fe 20
+```
+
+**ConvNeXt-B**
+
+99.734268707483 % 100%
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-B --num-workers 8 --epochs 30 -fe 30
+```
+
+**ConvNeXt-L**
+
+99.96811224489795 % 100%
+
+```bash
+CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-L --num-workers 8 --epochs 30 -fe 30
+```
+
+**ViT-L**
+
+运行到25epochs，显存暂时不够
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ViT-L --num-workers 8 --epochs 50 -fe 25
+```
+
+**Swin-L**
+
+运行到25epochs，显存暂时不够
+
+```bash
+CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net Swin-L --num-workers 8 --epochs 50 -fe 25
+```
+
+
 
 ### 提交结果
 
