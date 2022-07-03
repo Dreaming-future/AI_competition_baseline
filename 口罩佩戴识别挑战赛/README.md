@@ -8,7 +8,7 @@
 
 口罩佩戴时要分清正反，盖住口鼻和下巴，鼻夹要压实，出现脏污、变形、损坏、异味需要及时更换，连续佩戴时间不超过8小时。人脸佩戴口罩的自动化识别可以有效监督人们是否规范佩戴口罩，是抑制疾病在人流量大的公共场合快速传播和保护身体健康的重要技术手段。
 
-![img](https://ai-contest-static.xfyun.cn/2022/picture/152.png)
+![img](https://img-blog.csdnimg.cn/img_convert/dfea2b09592671cfcf981750ad2aaae7.png)
 
 ## 二、赛事任务
 
@@ -16,15 +16,15 @@
 
 mask_weared_incorrect：口罩佩戴不正确（漏出鼻子或者嘴巴）
 
-![img](https://ai-contest-static.xfyun.cn/2022/picture/153.png)
+![img](https://img-blog.csdnimg.cn/img_convert/e7f73c7a627c609bb8bb2e07c4e2e899.png)
 
 with_mask：正确佩戴口罩
 
-![img](https://ai-contest-static.xfyun.cn/2022/picture/154.png)
+![img](https://img-blog.csdnimg.cn/img_convert/33465c4c351da897214921687161ad3e.png)
 
 without_mask：没有佩戴口罩
 
-![img](https://ai-contest-static.xfyun.cn/2022/picture/155.png)
+![img](https://img-blog.csdnimg.cn/img_convert/889b53a39695816b9edc2fb01548d4b8.png)
 
 选手需要根据训练集构建模型对测试集的图片进行预测，按照测试集精度进行排名。
 
@@ -44,7 +44,7 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
 评估代码参考：
 
-![img](https://ai-contest-static.xfyun.cn/2022/picture/156.png)
+![img](https://img-blog.csdnimg.cn/img_convert/cb8833e0c3851cf927e442395d9d6064.png)
 
 ### 3. 评测及排行
 
@@ -68,7 +68,7 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
 \2) 提交前请确保预测结果的格式与sample_submit.csv中的格式一致。具体格式如下：
 
-![img](https://ai-contest-static.xfyun.cn/2022/picture/157.png)
+![img](https://img-blog.csdnimg.cn/img_convert/cda06c71f5ee0dcb90f845223737c52b.png)
 
 ## <u></u>
 
