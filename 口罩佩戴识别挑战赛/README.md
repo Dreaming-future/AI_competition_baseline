@@ -81,22 +81,46 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 ### Model Coming Soon
 
 - [x] MobileNetv2测试
+
 - [x] DenseNet169及DenseNet201
+
 - [x] ConvNeXt-B、ConvNeXt-L
+
 - [x] ViT
+
 - [x] Swim-Transformer
+
 - [x] EfficientNetv1、v2
+
 - [x] 集成模型的投票方法
+
+- [x] 集成模型的均值方法
+
+- [ ] 双分类模型，先分with_mask和without_mask，再分
+
+- [ ] > mask_weared_incorrect和with_mask（即是mask_weared_correct）
+
+- [ ] 
 
 ### 尝试Tricks
 
 - [x] 尝试多用数据增强
+
 - [x] 尝试用现有的权重进行迁移学习
-- [ ] 尝试利用LabelSmooth的损失
+
+- [x] 尝试利用LabelSmooth的损失
+
 - [x] 尝试用多模型集成，模型融合等方法（
+
 - [ ] 尝试K-Fold验证训练方法
+
 - [ ] 尝试改变图像的分辨率，原先是224x224
-- [ ] 先分类是否带了口罩，接着再进行，判断口罩佩戴是否正确
+
+- [ ] 先分类是否带了口罩，接着再进行，判断口罩佩戴是否正确。
+
+  > 简单来说，也就是先对with_mask和without_mask进行分类，其中mask_weared_incorrect是with_mask的一部分，之后，再用另一个模型对mask_weared_incorrect和with_mask（即是mask_weared_correct）
+
+- [ ] 集成多个模型
 
 
 
@@ -110,7 +134,15 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
 - [x] ViT效果一般，可能在少量数据集上，需要训练大量数据和大量时间才能得到更好的结果
 
-  Swin-L还是能得到很不错的结果，在一开始的就可以得到不错结果
+- [ ] Swin-L还是能得到很不错的结果，在一开始的就可以得到不错结果
+
+- [ ] 尝试利用数据集的均值，但是没有得到很好的结果，可能是因为，本身预训练模型的均值和方差也不是数据集的标准差和方差，所以可能结果就没有得到很好的结果。但是也可能是训练方式不同，导致结果的不同
+
+- [ ] 利用集成学习的方法并且加入LabelSmooth的训练方式，测试结果
+
+  
+  
+  
 
 
 
@@ -170,30 +202,34 @@ CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-L --num-workers 
 修改了均值以后，模型准确率下降了，可能是只迭代了30次，可以尝试迭代更多的次数
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-XL --num-workers 8 --epochs 100 -fe 100 --patience 5
+CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-XL --num-workers 8 --epochs 50 -fe 50
 ```
 
 **ViT-L**
 
 运行到25epochs，显存暂时不够，准确率一般
 
+重新训练50个迭代，只进行微调
+
 ```bash
-CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ViT-L --num-workers 8 --epochs 50 -fe 25
+CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net ViT-L --num-workers 4 --epochs 50 -fe 50
 ```
 
 **Swin-L**
 
 运行到25epochs，显存暂时不够，准确率一般
 
+重新训练50个迭代，只进行微调
+
 ```bash
-CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net Swin-L --num-workers 8 --epochs 50 -fe 25
+CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net Swin-L --num-workers 8 --epochs 50 -fe 50
 ```
 
 
 
 ### 提交结果
 
-已有最高结果，97.22，利用Imagenet的均值训练的ConvNeXt-XL进行训练50次得到的结果
+
 
 |  ID  |   状态   |  评分   |        提交文件名        |                           提交备注                           |      提交者       |      提交时间       |
 | :--: | :------: | :-----: | :----------------------: | :----------------------------------------------------------: | :---------------: | :-----------------: |
