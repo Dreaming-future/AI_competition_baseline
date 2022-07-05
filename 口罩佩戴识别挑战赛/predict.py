@@ -62,7 +62,7 @@ class Prediction():
         checkpoint = torch.load('./checkpoint/{}_ckpt.pth'.format(net))
         print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],checkpoint['acc']))
 
-        checkpoint = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
+        # checkpoint = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
         # self.net.load_state_dict(checkpoint['net'])
         from utils import remove_prefix
         self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
@@ -113,8 +113,18 @@ class Prediction():
         vote_label = np.argmax(vote_label.cpu().detach().numpy())
         return {"label": vote_label, 'class':self.classes[vote_label]}
 
+    # 所有模型的均值法
+    def ensemble_mean(self, img_path):
+        mean_labels = torch.zero(self.num_classes)
+        for model in self.nets:
+            self.net = model
+            pred_prob = self.predict(img_path)['label_prob']
+            mean_labels += pred_prob
+        mean_labels /= len(self.nets)
+        mean_label = np.argmax(mean_labels.cpu().detach().numpy())
+        return {'label':mean_label, 'class': self.classes[mean_label]}
 
-def save_csv(path = 'submit.csv',net = 'ConvNeXt-B'):
+def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = ''):
     import pandas as pd
     test = pd.read_csv('./data/sample_submit.csv')
 
@@ -129,7 +139,10 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B'):
     with tqdm(total=total,desc=f'Predict Pictures {total}',mininterval=0.3) as pbar:
         for i,img_path in enumerate(test['path']):
             if net == 'ensemble':
-                pre = pred.ensemble_vote(image_path=root + img_path)
+                if type == 'vote':
+                    pre = pred.ensemble_vote(image_path=root + img_path)
+                elif type == 'mean':
+                    pre = pred.ensemble_mean(image_path=root + img_path)
             else:
                 pre = pred.predict(image_path=root + img_path)
             test.iloc[i][1] = pre['class'] # 写入标签
@@ -144,5 +157,5 @@ if __name__ == '__main__':
     # os.environ['CUDA_VISIBLE_DEVICES'] = '3'
     root = './data/test//' # 文件夹的路径
     num_classes = 3 # 类别
-    net = 'ensemble'
-    save_csv(path = 'submit_{}.csv'.format(net),net = net)
+    net = 'ConvNeXt-L'
+    save_csv(path = 'submit_{}.csv'.format(net),net = net, type = 'mean')
