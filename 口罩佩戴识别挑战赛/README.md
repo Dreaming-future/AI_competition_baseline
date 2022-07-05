@@ -84,18 +84,19 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 - [x] DenseNet169及DenseNet201
 - [x] ConvNeXt-B、ConvNeXt-L
 - [x] ViT
-- [ ] Swim-Transformer
-- [ ] EfficientNetv1、v2
+- [x] Swim-Transformer
+- [x] EfficientNetv1、v2
+- [x] 集成模型的投票方法
 
 ### 尝试Tricks
 
 - [x] 尝试多用数据增强
 - [x] 尝试用现有的权重进行迁移学习
 - [ ] 尝试利用LabelSmooth的损失
-- [ ] 尝试用多模型集成，模型融合等方法
+- [x] 尝试用多模型集成，模型融合等方法（
 - [ ] 尝试K-Fold验证训练方法
 - [ ] 尝试改变图像的分辨率，原先是224x224
-- [ ] 
+- [ ] 先分类是否带了口罩，接着再进行，判断口罩佩戴是否正确
 
 
 
@@ -107,7 +108,7 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
 - [x] 使用timm的库，里面含有多个预训练的模型，利用里面的Transformer模型进行训练，其中也有EfficientNetv1，v2等等
 
-- [ ] ViT效果一般，可能在少量数据集上，需要训练大量数据和大量时间才能得到更好的结果
+- [x] ViT效果一般，可能在少量数据集上，需要训练大量数据和大量时间才能得到更好的结果
 
   Swin-L还是能得到很不错的结果，在一开始的就可以得到不错结果
 
@@ -162,9 +163,19 @@ CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-B --num-workers 
 CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-L --num-workers 8 --epochs 30 -fe 30
 ```
 
+**ConvNeXt-XL**
+
+在得分榜上可以达到97.2的准确率，所以大模型是有用的
+
+修改了均值以后，模型准确率下降了，可能是只迭代了30次，可以尝试迭代更多的次数
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-XL --num-workers 8 --epochs 100 -fe 100 --patience 5
+```
+
 **ViT-L**
 
-运行到25epochs，显存暂时不够
+运行到25epochs，显存暂时不够，准确率一般
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ViT-L --num-workers 8 --epochs 50 -fe 25
@@ -172,7 +183,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ViT-L --num-workers 8 --e
 
 **Swin-L**
 
-运行到25epochs，显存暂时不够
+运行到25epochs，显存暂时不够，准确率一般
 
 ```bash
 CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net Swin-L --num-workers 8 --epochs 50 -fe 25
@@ -182,11 +193,17 @@ CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net Swin-L --num-workers 8 --
 
 ### 提交结果
 
+已有最高结果，97.22，利用Imagenet的均值训练的ConvNeXt-XL进行训练50次得到的结果
+
 |  ID  |   状态   |  评分   |        提交文件名        |                           提交备注                           |      提交者       |      提交时间       |
 | :--: | :------: | :-----: | :----------------------: | :----------------------------------------------------------: | :---------------: | :-----------------: |
-|  1   | 返回分数 | 0.96905 |       submit_L.csv       | 利用ConvNeXt-L进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 09:24:29 |
-|  2   | 返回分数 | 0.96905 | submit_convnext_base.csv | 利用ConvNeXt-B进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 02:25:00 |
-|  3   | 返回分数 | 0.88571 |  submit_densenet201.csv  |      尝试使用DenseNet201进行训练迭代50次，得到结果测试       | 擅长射手的pikachu | 2022-07-03 02:24:36 |
-|  4   | 返回分数 | 0.95317 |       submit3.csv        |   利用ConvNeXt-T进行训练20次，固定了卷积层的数目得到的结果   | 擅长射手的pikachu | 2022-07-02 23:41:35 |
-|  5   | 返回分数 | 0.95952 |       submit2.csv        |               利用DenseNet169进行计算迭代50次                | 擅长射手的pikachu | 2022-07-02 21:18:10 |
-|  6   | 返回分数 | 0.83016 |        submit.csv        |                   MobieNetv2进行测试的结果                   | 擅长射手的pikachu | 2022-07-02 17:51:18 |
+|  1   | 返回分数 | 0.96349 |  submit_ConvNeXt-L.csv   | 试一下ConvNeXt-L的结果，固定了卷积层的数目得到的结果，只进行微调，均值方差不同了 | 擅长射手的pikachu | 2022-07-04 09:20:45 |
+|  2   | 返回分数 | 0.97222 |      submit_XL.csv       | 尝试一下ConvNeXt-XL的结果，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-04 09:19:26 |
+|  3   | 返回分数 | 0.96032 |   submit_Ensemble.csv    | 使用多个集成模型投票，有ConvNeXt-T-B-L,DenseNet169,ViT,Swin  | 擅长射手的pikachu | 2022-07-04 09:18:33 |
+|  4   | 返回分数 | 0.96905 |       submit_L.csv       | 利用ConvNeXt-L进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 09:24:29 |
+|  5   | 返回分数 | 0.96905 | submit_convnext_base.csv | 利用ConvNeXt-B进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 02:25:00 |
+|  6   | 返回分数 | 0.88571 |  submit_densenet201.csv  |      尝试使用DenseNet201进行训练迭代50次，得到结果测试       | 擅长射手的pikachu | 2022-07-03 02:24:36 |
+|  7   | 返回分数 | 0.95317 |       submit3.csv        |   利用ConvNeXt-T进行训练20次，固定了卷积层的数目得到的结果   | 擅长射手的pikachu | 2022-07-02 23:41:35 |
+|  8   | 返回分数 | 0.95952 |       submit2.csv        |               利用DenseNet169进行计算迭代50次                | 擅长射手的pikachu | 2022-07-02 21:18:10 |
+|  9   | 返回分数 | 0.83016 |        submit.csv        |                   MobieNetv2进行测试的结果                   | 擅长射手的pikachu | 2022-07-02 17:51:18 |
+
