@@ -7,7 +7,7 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
-
+from utils import LabelSmoothCELoss
 import os
 import argparse
 from utils import get_acc,EarlyStopping,remove_prefix
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     print('==> Building model..')
     if args.net == 'VGG16':
         from nets.VGG import VGG
-        net = VGG('VGG16')
+        net = VGG('VGG19')
     elif args.net == 'VGG19':
         from nets.VGG import VGG
         net = VGG('VGG19')
@@ -134,8 +134,8 @@ if __name__ == '__main__':
         
         checkpoint = torch.load('./checkpoint/{}_ckpt.pth'.format(args.net))
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(args.net))
-        # net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
-        net.load_state_dict(checkpoint['net'])
+        net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
+        # net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint_best['acc']
         start_epoch = checkpoint['epoch']
         args.lr = checkpoint['lr']
@@ -157,6 +157,7 @@ if __name__ == '__main__':
     
     early_stopping = EarlyStopping(patience = args.patience, verbose=True)
     criterion = nn.CrossEntropyLoss()
+    criterion = LabelSmoothCELoss()
     if args.optim == 'adamw':
         optimizer = optim.AdamW(net.parameters(), lr=args.lr)
     elif args.optim == 'adam':
@@ -244,7 +245,12 @@ if __name__ == '__main__':
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/{}_ckpt.pth'.format(args.net))
-
+        early_stopping(train_loss, net)
+        # 若满足 early stopping 要求
+        if early_stopping.early_stop:
+            print("Early stopping")
+            # 结束模型训练
+            exit()
     def test(epoch,testloader):
         global best_acc
         epoch_step_test = len(testloader)
