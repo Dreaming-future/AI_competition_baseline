@@ -114,12 +114,15 @@ class Prediction():
         return {"label": vote_label, 'class':self.classes[vote_label]}
 
     # 所有模型的均值法
-    def ensemble_mean(self, img_path):
+    def ensemble_mean(self, img_path, weights = [1]):
         mean_labels = torch.zero(self.num_classes)
-        for model in self.nets:
+        if weights == [1]:
+            weights = [1]*len(self.nets)
+        assert len(weights) == len(self.nets)
+        for i,model in enumerate(self.nets):
             self.net = model
             pred_prob = self.predict(img_path)['label_prob']
-            mean_labels += pred_prob
+            mean_labels = mean_labels + pred_prob*weights[i]
         mean_labels /= len(self.nets)
         mean_label = np.argmax(mean_labels.cpu().detach().numpy())
         return {'label':mean_label, 'class': self.classes[mean_label]}
