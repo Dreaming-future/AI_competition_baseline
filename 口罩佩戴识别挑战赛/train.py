@@ -304,7 +304,7 @@ if __name__ == '__main__':
             print("Early stopping")
             # 结束模型训练
             exit()
-    # print(net)
+    print(net)
     flag = False # 标志只需要做一次操作即可，后续加载数据不需要多次操作
     for epoch in range(start_epoch, epochs):
         if freeze and not flag:
@@ -312,13 +312,13 @@ if __name__ == '__main__':
                 for param in net.parameters():
                     param.requires_grad = False
                 if 'ConvNeXt' or 'ViT' in args.net:
-                    for param in net.head.parameters():
+                    for param in net.module.head.parameters():
                         param.requires_grad = True
                 elif 'ResNeXt' in args.net:
-                    for param in net.fc.parameters():
+                    for param in net.module.fc.parameters():
                         param.requires_grad = True
                 else:
-                    for param in net.classifier.parameters():
+                    for param in net.module.classifier.parameters():
                         param.requires_grad = True
             else:
                 flag = True
