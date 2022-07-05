@@ -81,25 +81,14 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 ### Model Coming Soon
 
 - [x] MobileNetv2测试
-
 - [x] DenseNet169及DenseNet201
-
 - [x] ConvNeXt-B、ConvNeXt-L
-
 - [x] ViT
-
 - [x] Swim-Transformer
-
 - [x] EfficientNetv1、v2
-
 - [x] 集成模型的投票方法
-
 - [x] 集成模型的均值方法
-
-- [ ] 双分类模型，先分with_mask和without_mask，再分
-
-- [ ] > mask_weared_incorrect和with_mask（即是mask_weared_correct）
-
+- [ ] 双分类模型，先分with_mask 和 without_mask，再分 mask_weared_incorrect 和 with_mask（即是mask_weared_correct）
 - [ ] 
 
 ### 尝试Tricks
