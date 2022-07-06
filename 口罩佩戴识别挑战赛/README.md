@@ -123,11 +123,13 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
 - [x] ViT效果一般，可能在少量数据集上，需要训练大量数据和大量时间才能得到更好的结果
 
-- [ ] Swin-L还是能得到很不错的结果，在一开始的就可以得到不错结果
+- [x] Swin-L还是能得到很不错的结果，在一开始的就可以得到不错结果
 
-- [ ] 尝试利用数据集的均值，但是没有得到很好的结果，可能是因为，本身预训练模型的均值和方差也不是数据集的标准差和方差，所以可能结果就没有得到很好的结果。但是也可能是训练方式不同，导致结果的不同
+- [x] 尝试利用数据集的均值，但是没有得到很好的结果，可能是因为，本身预训练模型的均值和方差也不是数据集的标准差和方差，所以可能结果就没有得到很好的结果。但是也可能是训练方式不同，导致结果的不同
 
-- [ ] 利用集成学习的方法并且加入LabelSmooth的训练方式，测试结果
+- [x] 利用集成学习的方法并且加入LabelSmooth的训练方式，测试结果
+
+- [ ] 重写集成模型的vote和mean方法，集成多个模型进行训练
 
   
   
@@ -143,14 +145,11 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 transform_train = transforms.Compose([
         transforms.Resize(resize),
         transforms.RandomCrop(resize, padding=4),
-        transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(image_mean, image_std),
     ])
 ```
-
-
 
 **DenseNet169**
 
@@ -181,7 +180,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-B --num-workers 
 99.96811224489795 % 100%
 
 ```bash
-CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-L --num-workers 8 --epochs 30 -fe 30
+CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-L --num-workers 8 --epochs 50 -fe 50
 ```
 
 **ConvNeXt-XL**
@@ -194,9 +193,13 @@ CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-L --num-workers 
 CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net ConvNeXt-XL --num-workers 8 --epochs 50 -fe 50
 ```
 
-**ViT-L**
 
-运行到25epochs，显存暂时不够，准确率一般
+
+2022.7.6日，所有模型重新训练，利用数据集的均值进行重新训练
+
+因为之前的模型效果不是很好，并且利用集成模型得到的结果也不是很准确，重写方法并且重新训练进行测试
+
+**ViT-L**
 
 重新训练50个迭代，只进行微调
 
@@ -205,8 +208,6 @@ CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net ViT-L --num-workers 4 --e
 ```
 
 **Swin-L**
-
-运行到25epochs，显存暂时不够，准确率一般
 
 重新训练50个迭代，只进行微调
 
@@ -218,17 +219,18 @@ CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net Swin-L --num-workers 8 --
 
 ### 提交结果
 
-
-
 |  ID  |   状态   |  评分   |        提交文件名        |                           提交备注                           |      提交者       |      提交时间       |
 | :--: | :------: | :-----: | :----------------------: | :----------------------------------------------------------: | :---------------: | :-----------------: |
-|  1   | 返回分数 | 0.96349 |  submit_ConvNeXt-L.csv   | 试一下ConvNeXt-L的结果，固定了卷积层的数目得到的结果，只进行微调，均值方差不同了 | 擅长射手的pikachu | 2022-07-04 09:20:45 |
-|  2   | 返回分数 | 0.97222 |      submit_XL.csv       | 尝试一下ConvNeXt-XL的结果，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-04 09:19:26 |
-|  3   | 返回分数 | 0.96032 |   submit_Ensemble.csv    | 使用多个集成模型投票，有ConvNeXt-T-B-L,DenseNet169,ViT,Swin  | 擅长射手的pikachu | 2022-07-04 09:18:33 |
-|  4   | 返回分数 | 0.96905 |       submit_L.csv       | 利用ConvNeXt-L进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 09:24:29 |
-|  5   | 返回分数 | 0.96905 | submit_convnext_base.csv | 利用ConvNeXt-B进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 02:25:00 |
-|  6   | 返回分数 | 0.88571 |  submit_densenet201.csv  |      尝试使用DenseNet201进行训练迭代50次，得到结果测试       | 擅长射手的pikachu | 2022-07-03 02:24:36 |
-|  7   | 返回分数 | 0.95317 |       submit3.csv        |   利用ConvNeXt-T进行训练20次，固定了卷积层的数目得到的结果   | 擅长射手的pikachu | 2022-07-02 23:41:35 |
-|  8   | 返回分数 | 0.95952 |       submit2.csv        |               利用DenseNet169进行计算迭代50次                | 擅长射手的pikachu | 2022-07-02 21:18:10 |
-|  9   | 返回分数 | 0.83016 |        submit.csv        |                   MobieNetv2进行测试的结果                   | 擅长射手的pikachu | 2022-07-02 17:51:18 |
+|  1   | 返回分数 | 0.95873 |  submit_ConvNeXt-XL.csv  | 利用ImageNet1k数据集的均值以后，进行ConvNeXt的训练，总共迭代61次。 | 擅长射手的pikachu | 2022-07-05 23:43:44 |
+|  2   | 返回分数 | 0.96905 |  submit_ConvNeXt-XL.csv  |  修改了数据集的均值以后，进行ConvNeXt的训练，总共迭代45次。  | 擅长射手的pikachu | 2022-07-05 12:22:09 |
+|  3   | 返回分数 | 0.96508 |  submit_ConvNeXt-XL.csv  | 修改了数据集的均值以后，进行ConvNeXt的训练，总共迭代45次，得到最优结果99.96%左右 | 擅长射手的pikachu | 2022-07-05 12:18:12 |
+|  4   | 返回分数 | 0.96349 |  submit_ConvNeXt-L.csv   | 试一下ConvNeXt-L的结果，固定了卷积层的数目得到的结果，只进行微调，均值方差不同了 | 擅长射手的pikachu | 2022-07-04 09:20:45 |
+|  5   | 返回分数 | 0.97222 |      submit_XL.csv       | 尝试一下ConvNeXt-XL的结果，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-04 09:19:26 |
+|  6   | 返回分数 | 0.96032 |   submit_Ensemble.csv    | 使用多个集成模型投票，有ConvNeXt-T-B-L,DenseNet169,ViT,Swin  | 擅长射手的pikachu | 2022-07-04 09:18:33 |
+|  7   | 返回分数 | 0.96905 |       submit_L.csv       | 利用ConvNeXt-L进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 09:24:29 |
+|  8   | 返回分数 | 0.96905 | submit_convnext_base.csv | 利用ConvNeXt-B进行训练50次，固定了卷积层的数目得到的结果，只进行微调 | 擅长射手的pikachu | 2022-07-03 02:25:00 |
+|  9   | 返回分数 | 0.88571 |  submit_densenet201.csv  |      尝试使用DenseNet201进行训练迭代50次，得到结果测试       | 擅长射手的pikachu | 2022-07-03 02:24:36 |
+|  10  | 返回分数 | 0.95317 |       submit3.csv        |   利用ConvNeXt-T进行训练20次，固定了卷积层的数目得到的结果   | 擅长射手的pikachu | 2022-07-02 23:41:35 |
+|  11  | 返回分数 | 0.95952 |       submit2.csv        |               利用DenseNet169进行计算迭代50次                | 擅长射手的pikachu | 2022-07-02 21:18:10 |
+|  12  | 返回分数 | 0.83016 |        submit.csv        |                   MobieNetv2进行测试的结果                   | 擅长射手的pikachu | 2022-07-02 17:51:18 |
 
