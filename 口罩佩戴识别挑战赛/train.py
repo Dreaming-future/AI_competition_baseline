@@ -23,11 +23,14 @@ if __name__ == '__main__':
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
                                                        'ResNeXt50_32x4d','ResNeXt101_32x8d',
-                                                       'EfficienNet_b0','EfficienNet_b1','EfficienNet_b2','EfficienNet_b3','EfficienNet_b4','EfficienNet_b5','EfficienNet_b6','EfficienNet_b7','EfficienNet_b8',
+                                                       'EfficientNet_b0','EfficientNet_b1','EfficientNet_b2','EfficientNet_b3','EfficientNet_b4','EfficienNet_b5','EfficientNet_b6','EfficientNet_b7','EfficientNet_b8',
                                                        'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
+                                                       'Swin-M','Swin-L'
                                                        'ViT-B','ViT-L','ViT-H',
-                                                       'Swin-M','Swin-L'], default='MobileNetv2', help='net type')
+                                                       'CaiT_s24','CaiT_xxs24','CaiT_xxs36',
+                                                       'DeiT-B','DeiT-T','DeiT-S',
+                                                       'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1'], default='MobileNetv2', help='net type')
     parser.add_argument('--epochs', type = int, default=20, help = 'Epochs')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--patience', '-p', type = int, default=7, help='patience for Early stop')
@@ -35,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--resize',type=int,default=224)
     parser.add_argument('-f',action='store_true',help='choose to freeze')
     parser.add_argument('-fe',type=int,default=20)
-    parser.add_argument('-dp',type='store_false')
+    parser.add_argument('-dp',action='store_false')
 
     args = parser.parse_args()
     
@@ -243,7 +246,7 @@ if __name__ == '__main__':
             # 结束模型训练
             exit()
 
-    print("==》你选择了{}模型，准备开始训练".format(args.net))
+    print("==> 你选择了{}模型，准备开始训练".format(args.net))
     flag = False # 标志只需要做一次操作即可，后续加载数据不需要多次操作
     for epoch in range(start_epoch, epochs):
         if freeze and not flag:
@@ -251,7 +254,7 @@ if __name__ == '__main__':
                 for param in net.parameters():
                     param.requires_grad = False
                 try:
-                    if 'ConvNeXt' in args.net or 'ViT' in args.net:
+                    if 'ViT' in args.net or 'ConvNeXt' in args.net or 'BiT' in args.net:
                         if args.dp:
                             for param in net.module.head.parameters():
                                 param.requires_grad = True
