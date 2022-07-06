@@ -37,7 +37,7 @@ class Prediction():
         print("我们使用的是 {} 模型进行测试".format(net))
         self.net = Get_model(net, num_classes=self.num_classes)
 
-        checkpoint = torch.load(r'./checkpoint/best_{}_ckpt.pth'.format(net))
+        checkpoint = torch.load(r'./checkpoint/{}_ckpt.pth'.format(net))
         print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],checkpoint['acc']))
 
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
@@ -166,8 +166,15 @@ if __name__ == '__main__':
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
                                                        'ResNeXt50_32x4d','ResNeXt101_32x8d',
+                                                       'EfficientNet_b0','EfficientNet_b1','EfficientNet_b2','EfficientNet_b3','EfficientNet_b4','EfficienNet_b5','EfficientNet_b6','EfficientNet_b7','EfficientNet_b8',
+                                                       'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'ViT-B','ViT-L','ViT-H','Swin-L','ensemble'], default='ensemble', help='net type')
+                                                       'Swin-M','Swin-L'
+                                                       'ViT-B','ViT-L','ViT-H',
+                                                       'CaiT_s24','CaiT_xxs24','CaiT_xxs36',
+                                                       'DeiT-B','DeiT-T','DeiT-S',
+                                                       'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1',
+                                                       'ensemble'], default='ensemble', help='net type')
     parser.add_argument('--type','-t',type=str, choices=['mean','vote'], default='vote')
     parser.add_argument('-nc',type = int, default=3)
     args = parser.parse_args()

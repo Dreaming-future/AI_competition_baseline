@@ -6,13 +6,14 @@ import numpy as np
 import torch.nn.functional as F
 
 
+
 def Get_model(net, num_classes = 1000):
     if net == 'VGG16':
-        from nets.VGG import VGG
-        model = VGG('VGG19')
+        from nets.VGG import VGG16_bn
+        model = VGG16_bn(num_classes)
     elif net == 'VGG19':
-        from nets.VGG import VGG
-        model = VGG('VGG19')
+        from nets.VGG import VGG19_bn
+        model = VGG19_bn(num_classes)
     elif net == 'ResNet34':
         from nets.ResNet import ResNet34
         model = ResNet34(num_classes)
@@ -115,10 +116,44 @@ def Get_model(net, num_classes = 1000):
     elif net == 'ViT-H':
         from nets.ViT import Vit_huge_patch14_224
         model = Vit_huge_patch14_224(num_classes)
+    elif net == 'Swin-B':
+        from nets.Swin import swin_base_patch4_window7_224
+        model = swin_base_patch4_window7_224
     elif net == 'Swin-L':
         from nets.Swin import swin_large_patch4_window7_224
         model = swin_large_patch4_window7_224(num_classes)
+    elif net == 'CaiT_s24':
+        from nets.CaiT import CaiT_s24
+        model = CaiT_s24(num_classes)
+    elif net == 'CaiT_xxs24':
+        from nets.CaiT import CaiT_xxs24
+        model = CaiT_xxs24(num_classes)
+    elif net == 'CaiT_xxs36':
+        from nets.CaiT import CaiT_xxs36
+        model = CaiT_xxs36(num_classes)
+    elif net == 'DeiT-B':
+        from nets.DeiT import DeiT_B
+        model = DeiT_B(num_classes)
+    elif net == 'DeiT-T':
+        from nets.DeiT import DeiT_T
+        model = DeiT_T(num_classes)
+    elif net == 'DeiT-S':
+        from nets.DeiT import DeiT_S
+        model = DeiT_S(num_classes)
+    elif net == 'BiT-M-resnet152x4':
+        from nets.BiT import BiT_M_resnet152x4
+        model = BiT_M_resnet152x4(num_classes)
+    elif net == 'BiT-M-resnet152x2':
+        from nets.BiT import BiT_M_resnet152x2
+        model = BiT_M_resnet152x2(num_classes)
+    elif net == 'BiT-M-resnet101x3':
+        from nets.BiT import BiT_M_resnet101x3
+        model = BiT_M_resnet101x3(num_classes)
+    elif net == 'BiT-M-resnet101x1':
+        from nets.BiT import BiT_M_resnet101x1
+        model = BiT_M_resnet101x1(num_classes) 
     return model
+
 def remove_prefix(state_dict, prefix):
     '''
     Old style model is stored with all names of parameters
