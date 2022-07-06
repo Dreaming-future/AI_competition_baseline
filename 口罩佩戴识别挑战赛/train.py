@@ -1,24 +1,19 @@
 '''Train CIFAR10 with PyTorch.'''
-from unittest import TestLoader
-from nets.ConvNeXt import convnext_small
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.backends.cudnn as cudnn
-import torchvision
-import torchvision.transforms as transforms
 from utils import LabelSmoothCELoss
 import os
 import argparse
 from utils import get_acc,EarlyStopping,remove_prefix
-from dataloader import get_test_dataloader, get_training_dataloader
+from dataloader import get_training_dataloader
 from tqdm import tqdm
 
 # CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda 
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
+    parser = argparse.ArgumentParser(description='PyTorch Classification Training')
     parser.add_argument('--lr', default=0.004, type=float, help='learning rate')
     parser.add_argument('--cuda', action='store_true', default=False, help =' use GPU?')
     parser.add_argument('--batch-size', default=64, type=int, help = "Batch Size for Training")
@@ -136,10 +131,11 @@ if __name__ == '__main__':
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(args.net))
         net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
         # net.load_state_dict(checkpoint['net'])
+        last_acc = checkpoint['acc']
         best_acc = checkpoint_best['acc']
         start_epoch = checkpoint['epoch']
         args.lr = checkpoint['lr']
-        print("从{} 开始训练， 学习率为 {} , 最佳的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc))
+        print("从{} 开始训练， 学习率为 {} , 最佳的结果ACC为{}, 上一次的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc,last_acc))
 
 
     if args.cuda:
@@ -245,12 +241,14 @@ if __name__ == '__main__':
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/{}_ckpt.pth'.format(args.net))
+        
         early_stopping(train_loss, net)
         # 若满足 early stopping 要求
         if early_stopping.early_stop:
             print("Early stopping")
             # 结束模型训练
             exit()
+   
     def test(epoch,testloader):
         global best_acc
         epoch_step_test = len(testloader)
