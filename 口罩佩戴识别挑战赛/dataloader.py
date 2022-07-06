@@ -12,8 +12,6 @@ def get_training_dataloader(batch_size = 64, num_workers = 4, shuffle = True, re
     transform_train = transforms.Compose([
         transforms.Resize(resize),
         transforms.RandomCrop(resize, padding=4),
-        # transforms.CenterCrop(resize),
-        transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(image_mean, image_std),
@@ -24,7 +22,7 @@ def get_training_dataloader(batch_size = 64, num_workers = 4, shuffle = True, re
     # print("分类类别",classes)
     # print(trainset)
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, shuffle=shuffle, num_workers= num_workers)
+        trainset, batch_size=batch_size, shuffle=shuffle, num_workers= num_workers, pin_memory = True)
     return trainloader
     
 def get_test_dataloader(batch_size = 64, num_workers = 4, shuffle = True, resize = 224): 
@@ -37,7 +35,7 @@ def get_test_dataloader(batch_size = 64, num_workers = 4, shuffle = True, resize
     root = './data//'
     testset = torchvision.datasets.ImageFolder(root + 'test',transform= transform_test)
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=shuffle, num_workers= num_workers)
+        testset, batch_size=batch_size, shuffle=shuffle, num_workers= num_workers, pin_memory = True)
     return testloader
 
 # from utils import get_mean_and_std
