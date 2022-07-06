@@ -4,7 +4,7 @@ from torchinfo import summary
 
 
 model_efficientnet = timm.list_models('*efficient*',pretrained=True)
-print(model_efficientnet)
+# print(model_efficientnet)
 def EfficientNet_b0(num_classes = 1000, pretrained = True):
     model = timm.create_model('tf_efficientnet_b0', num_classes = num_classes, pretrained = pretrained)
     return model
