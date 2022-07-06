@@ -109,7 +109,7 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
   > 简单来说，也就是先对with_mask和without_mask进行分类，其中mask_weared_incorrect是with_mask的一部分，之后，再用另一个模型对mask_weared_incorrect和with_mask（即是mask_weared_correct）
 
-- [x] 集成多个模型
+- [x] 集成多个模型，有98%的准确率，准确率率大概提高了0.8%左右
 
 
 
@@ -129,7 +129,7 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 
 - [x] 利用集成学习的方法并且加入LabelSmooth的训练方式，测试结果
 
-- [x] 重写集成模型的vote和mean方法，集成多个模型进行训练，得到很好的结果，有98%的准确率
+- [x] 重写集成模型的vote和mean方法，集成多个模型进行训练，得到很好的结果，有98%的准确率，准确率率大概提高了0.8%左右
 
   
   
@@ -148,11 +148,13 @@ transform_train = transforms.Compose([
     ])
 ```
 
+batchsize 都为64，主要在预训练的神经网络上微调，这样比重新训练或者在此基础上训练能得到更好的结果，并且网络也可以更快的收敛
+
 
 
 **ConvNeXt-XL**
 
-在得分榜上可以达到97.2的准确率，所以大模型是有用的
+相对于其他模型的95%和96%来说，在得分榜上可以达到97.2的准确率，所以大模型是有用的
 
 修改了均值以后，模型准确率下降了，可能是只迭代了30次，可以尝试迭代更多的次数
 
@@ -191,6 +193,8 @@ CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net EfficientNetv2-XL --num-w
 ```
 
 除此之外，还训练了DenseNet201，VGG19_bn等进行测试
+
+利用集成模型后，准确率率大概提高了0.8%左右
 
 ### 提交结果
 
