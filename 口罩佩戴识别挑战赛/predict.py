@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
+import os
+from utils import Get_model
 
 class Prediction():
     def __init__(self):
@@ -30,33 +32,10 @@ class Prediction():
         模型初始化，必须在此方法中加载模型
         '''
         print('==> Resuming from checkpoint..')
-        # assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        
-        from nets.ConvNeXt import convnext_tiny,convnext_base,convnext_large,convnext_xlarge
-        from nets.DenseNet import DenseNet201,DenseNet169
+        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
 
         print("我们使用的是 {} 模型进行测试".format(net))
-        if net == 'ConvNeXt-T':
-            self.net = convnext_tiny(self.num_classes)
-        elif net == 'ConvNeXt-B':
-            self.net = convnext_base(self.num_classes)
-        elif net == 'ConvNeXt-L':
-            self.net = convnext_large(self.num_classes)
-        elif net == 'ConvNeXt-XL':
-            self.net = convnext_xlarge(self.num_classes)
-        elif net == 'DenseNet169':
-            self.net = DenseNet169(self.num_classes)
-        elif net == 'DenseNet201':
-            self.net = DenseNet201(self.num_classes)
-        elif net == 'ViT-L':
-            from nets.ViT import Vit_large_patch16_224
-            self.net = Vit_large_patch16_224(num_classes)
-        elif net == 'ViT-H':
-            from nets.ViT import Vit_huge_patch14_224
-            self.net = Vit_huge_patch14_224(num_classes)
-        elif net == 'Swin-L':
-            from nets.Swin import swin_large_patch4_window7_224
-            self.net = swin_large_patch4_window7_224(num_classes)
+        self.net = Get_model(net, num_classes=self.num_classes)
 
         checkpoint = torch.load(r'./checkpoint/best_{}_ckpt.pth'.format(net))
         print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],checkpoint['acc']))

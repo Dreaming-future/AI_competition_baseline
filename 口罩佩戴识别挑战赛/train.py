@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils import LabelSmoothCELoss
+from utils import Get_model, LabelSmoothCELoss
 import os
 import argparse
 from utils import get_acc,EarlyStopping,remove_prefix
@@ -23,8 +23,11 @@ if __name__ == '__main__':
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
                                                        'ResNeXt50_32x4d','ResNeXt101_32x8d',
+                                                       'EfficienNet_b0','EfficienNet_b1','EfficienNet_b2','EfficienNet_b3','EfficienNet_b4','EfficienNet_b5','EfficienNet_b6','EfficienNet_b7','EfficienNet_b8',
+                                                       'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'ViT-B','ViT-L','ViT-H','Swin-L'], default='MobileNetv2', help='net type')
+                                                       'ViT-B','ViT-L','ViT-H',
+                                                       'Swin-M','Swin-L'], default='MobileNetv2', help='net type')
     parser.add_argument('--epochs', type = int, default=20, help = 'Epochs')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--patience', '-p', type = int, default=7, help='patience for Early stop')
@@ -32,6 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--resize',type=int,default=224)
     parser.add_argument('-f',action='store_true',help='choose to freeze')
     parser.add_argument('-fe',type=int,default=20)
+    parser.add_argument('-dp',type='store_false')
 
     args = parser.parse_args()
     
@@ -49,78 +53,7 @@ if __name__ == '__main__':
 
     #  Model
     print('==> Building model..')
-    if args.net == 'VGG16':
-        from nets.VGG import VGG
-        net = VGG('VGG19')
-    elif args.net == 'VGG19':
-        from nets.VGG import VGG
-        net = VGG('VGG19')
-    elif args.net == 'ResNet50':
-        from nets.ResNet import ResNet50
-        net = ResNet50(num_classes)
-    elif args.net == 'ResNet34':
-        from nets.ResNet import ResNet34
-        net = ResNet34(num_classes)
-    elif args.net == 'ResNet101':
-        from nets.ResNet import ResNet101
-        net = ResNet101(num_classes)
-    elif args.net == 'LeNet5':
-        from nets.LeNet5 import LeNet5
-        net = LeNet5(num_classes)
-    elif args.net == 'AlexNet':
-        from nets.AlexNet import AlexNet
-        net = AlexNet(num_classes)
-    elif args.net == 'DenseNet':
-        from nets.DenseNet import densenet_cifar
-        net = densenet_cifar()
-    elif args.net == 'DenseNet121':
-        from nets.DenseNet import DenseNet121
-        net = DenseNet121(num_classes)
-    elif args.net == 'DenseNet169':
-        from nets.DenseNet import DenseNet169
-        net = DenseNet169(num_classes)
-    elif args.net == 'DenseNet201':
-        from nets.DenseNet import DenseNet201
-        net = DenseNet201(num_classes)
-    elif args.net == 'MobileNetv1':
-        from nets.MobileNetv1 import MobileNet
-        net = MobileNet(num_classes)
-    elif args.net == 'MobileNetv2':
-        from nets.MobileNetv2 import MobileNetV2
-        net = MobileNetV2(num_classes)
-    elif args.net == 'ResNeXt50_32x4d':
-        from nets.ResNeXt import ResNeXt50_32x4d
-        net = ResNeXt50_32x4d(num_classes)
-    elif args.net == 'ResNeXt101_32x8d':
-        from nets.ResNeXt import ResNeXt101_32x8d
-        net = ResNeXt101_32x8d(num_classes)
-    elif args.net == 'ConvNeXt-T':
-        from nets.ConvNeXt import convnext_tiny
-        net = convnext_tiny(num_classes)
-    elif args.net == 'ConvNeXt-S':
-        from nets.ConvNeXt import convnext_small
-        net = convnext_small(num_classes)
-    elif args.net == 'ConvNeXt-B':
-        from nets.ConvNeXt import convnext_base
-        net = convnext_base(num_classes)
-    elif args.net == 'ConvNeXt-L':
-        from nets.ConvNeXt import convnext_large
-        net = convnext_large(num_classes)
-    elif args.net == 'ConvNeXt-XL':
-        from nets.ConvNeXt import convnext_xlarge
-        net = convnext_xlarge(num_classes)
-    elif args.net == 'ViT-B':
-        from nets.ViT import Vit_bash_patch16_224
-        net = Vit_bash_patch16_224(num_classes)
-    elif args.net == 'ViT-L':
-        from nets.ViT import Vit_large_patch16_224
-        net = Vit_large_patch16_224(num_classes)
-    elif args.net == 'ViT-H':
-        from nets.ViT import Vit_huge_patch14_224
-        net = Vit_huge_patch14_224(num_classes)
-    elif args.net == 'Swin-L':
-        from nets.Swin import swin_large_patch4_window7_224
-        net = swin_large_patch4_window7_224(3)
+    net = Get_model(args.net, num_classes = num_classes)
 
     if args.resume:
         # Load checkpoint.
@@ -135,12 +68,13 @@ if __name__ == '__main__':
         best_acc = checkpoint_best['acc']
         start_epoch = checkpoint['epoch']
         args.lr = checkpoint['lr']
-        print("从{} 开始训练， 学习率为 {} , 最佳的结果ACC为{}, 上一次的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc,last_acc))
+        print("从EPOCH = {} 开始训练， 学习率为 {} , 最佳的结果ACC为 {:.2f}, 上一次的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc,last_acc))
 
 
     if args.cuda:
         device = 'cuda'
-        net = torch.nn.DataParallel(net)
+        if args.dp:
+            net = torch.nn.DataParallel(net)
         net = net.to(device)
         # 当计算图不会改变的时候（每次输入形状相同，模型不改变）的情况下可以提高性能，反之则降低性能
         torch.backends.cudnn.benchmark = True
@@ -308,22 +242,41 @@ if __name__ == '__main__':
             print("Early stopping")
             # 结束模型训练
             exit()
-    print(net)
+
+    print("==》你选择了{}模型，准备开始训练".format(args.net))
     flag = False # 标志只需要做一次操作即可，后续加载数据不需要多次操作
     for epoch in range(start_epoch, epochs):
         if freeze and not flag:
             if epoch < freeze_epoch:
                 for param in net.parameters():
                     param.requires_grad = False
-                if 'ConvNeXt' or 'ViT' in args.net:
-                    for param in net.module.head.parameters():
-                        param.requires_grad = True
-                elif 'ResNeXt' in args.net:
-                    for param in net.module.fc.parameters():
-                        param.requires_grad = True
-                else:
-                    for param in net.module.classifier.parameters():
-                        param.requires_grad = True
+                try:
+                    if 'ConvNeXt' in args.net or 'ViT' in args.net:
+                        if args.dp:
+                            for param in net.module.head.parameters():
+                                param.requires_grad = True
+                        else:
+                            for param in net.head.parameters():
+                                param.requires_grad = True
+                    elif 'ResNeXt' in args.net:
+                        if args.dp:
+                            for param in net.module.fc.parameters():
+                                param.requires_grad = True
+                        else:
+                            for param in net.fc.parameters():
+                                param.requires_grad = True
+                    else:
+                        if args.dp:
+                            for param in net.module.classifier.parameters():
+                                param.requires_grad = True
+                        else:
+                            for param in net.classifier.parameters():
+                                param.requires_grad = True
+                except Exception as e:
+                    print(net)
+                    print("==>冻结分类层出现错误")
+                    print(e)
+                    exit()
             else:
                 flag = True
                 for param in net.parameters():

@@ -6,6 +6,119 @@ import numpy as np
 import torch.nn.functional as F
 
 
+def Get_model(net, num_classes = 1000):
+    if net == 'VGG16':
+        from nets.VGG import VGG
+        model = VGG('VGG19')
+    elif net == 'VGG19':
+        from nets.VGG import VGG
+        model = VGG('VGG19')
+    elif net == 'ResNet34':
+        from nets.ResNet import ResNet34
+        model = ResNet34(num_classes)
+    elif net == 'ResNet50':
+        from nets.ResNet import ResNet50
+        model = ResNet50(num_classes)
+    elif net == 'ResNet101':
+        from nets.ResNet import ResNet101
+        model = ResNet101(num_classes)
+    elif net == 'LeNet5':
+        from nets.LeNet5 import LeNet5
+        model = LeNet5(num_classes)
+    elif net == 'AlexNet':
+        from nets.AlexNet import AlexNet
+        model = AlexNet(num_classes)
+    elif net == 'DenseNet':
+        from nets.DenseNet import densenet_cifar
+        net = densenet_cifar()
+    elif net == 'DenseNet121':
+        from nets.DenseNet import DenseNet121
+        model = DenseNet121(num_classes)
+    elif net == 'DenseNet169':
+        from nets.DenseNet import DenseNet169
+        net = DenseNet169(num_classes)
+    elif net == 'DenseNet201':
+        from nets.DenseNet import DenseNet201
+        model = DenseNet201(num_classes)
+    elif net == 'MobileNetv1':
+        from nets.MobileNetv1 import MobileNet
+        net = MobileNet(num_classes)
+    elif net == 'MobileNetv2':
+        from nets.MobileNetv2 import MobileNetV2
+        model = MobileNetV2(num_classes)
+    elif net == 'ResNeXt50_32x4d':
+        from nets.ResNeXt import ResNeXt50_32x4d
+        model = ResNeXt50_32x4d(num_classes)
+    elif net == 'ResNeXt101_32x8d':
+        from nets.ResNeXt import ResNeXt101_32x8d
+        model = ResNeXt101_32x8d(num_classes)
+    elif net == 'EfficientNet_b0':
+        from nets.EfficientNet import EfficientNet_b0
+        model = EfficientNet_b0(num_classes)
+    elif net == 'EfficientNet_b1':
+        from nets.EfficientNet import EfficientNet_b1
+        model = EfficientNet_b1(num_classes)
+    elif net == 'EfficientNet_b2':
+        from nets.EfficientNet import EfficientNet_b2
+        model = EfficientNet_b2(num_classes)
+    elif net == 'EfficientNet_b3':
+        from nets.EfficientNet import EfficientNet_b3
+        model = EfficientNet_b3(num_classes)
+    elif net == 'EfficientNet_b4':
+        from nets.EfficientNet import EfficientNet_b4
+        model = EfficientNet_b4(num_classes)
+    elif net == 'EfficientNet_b5':
+        from nets.EfficientNet import EfficientNet_b5
+        model = EfficientNet_b5(num_classes)
+    elif net == 'EfficientNet_b6':
+        from nets.EfficientNet import EfficientNet_b6
+        model = EfficientNet_b6(num_classes)
+    elif net == 'EfficientNet_b7':
+        from nets.EfficientNet import EfficientNet_b7
+        model = EfficientNet_b7(num_classes)
+    elif net == 'EfficientNet_b8':
+        from nets.EfficientNet import EfficientNet_b8
+        model = EfficientNet_b8(num_classes)
+    elif net == 'EfficientNetv2-S':
+        from nets.EfficientNetv2 import Efficientv2_S
+        model = Efficientv2_S(num_classes)
+    elif net == 'EfficientNetv2-M':
+        from nets.EfficientNetv2 import Efficientv2_M
+        net = Efficientv2_M(num_classes)
+    elif net == 'EfficientNetv2-L':
+        from nets.EfficientNetv2 import Efficientv2_L
+        model = Efficientv2_L(num_classes)
+    elif net == 'EfficientNetv2-XL':
+        from nets.EfficientNetv2 import Efficientv2_XL
+        model = Efficientv2_XL(num_classes)
+    elif net == 'ConvNeXt-T':
+        from nets.ConvNeXt import convnext_tiny
+        model = convnext_tiny(num_classes)
+    elif net == 'ConvNeXt-S':
+        from nets.ConvNeXt import convnext_small
+        model = convnext_small(num_classes)
+    elif net == 'ConvNeXt-B':
+        from nets.ConvNeXt import convnext_base
+        model = convnext_base(num_classes)
+    elif net == 'ConvNeXt-L':
+        from nets.ConvNeXt import convnext_large
+        model = convnext_large(num_classes)
+    elif net == 'ConvNeXt-XL':
+        from nets.ConvNeXt import convnext_xlarge
+        model = convnext_xlarge(num_classes)
+    elif net == 'ViT-B':
+        from nets.ViT import Vit_bash_patch16_224
+        model = Vit_bash_patch16_224(num_classes)
+    elif net == 'ViT-L':
+        from nets.ViT import Vit_large_patch16_224
+        model = Vit_large_patch16_224(num_classes)
+    elif net == 'ViT-H':
+        from nets.ViT import Vit_huge_patch14_224
+        model = Vit_huge_patch14_224(num_classes)
+    elif net == 'Swin-L':
+        from nets.Swin import swin_large_patch4_window7_224
+        model = swin_large_patch4_window7_224(num_classes)
+    return model
 def remove_prefix(state_dict, prefix):
     '''
     Old style model is stored with all names of parameters
