@@ -193,7 +193,7 @@ def convnext_small(num_classes = 1000):
 
     return model              
 
-convnext_small(3)
+
 
 def convnext_base(num_classes: int):
     # https://dl.fbaipublicfiles.com/convnext/convnext_base_1k_224_ema.pth
