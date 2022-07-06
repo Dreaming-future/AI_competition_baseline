@@ -26,7 +26,7 @@ class Prediction():
         self.Ensemble = False
         self.nets = [] # 集成模型的列表
 
-    def load_model(self, net = 'ConvNeXt-B'):
+    def load_model(self, net = 'ConvNeXt-B', type = 'best'):
         '''
         模型初始化，必须在此方法中加载模型
         '''
@@ -59,17 +59,21 @@ class Prediction():
             from nets.Swin import swin_large_patch4_window7_224
             self.net = swin_large_patch4_window7_224(num_classes)
 
-        checkpoint = torch.load('./checkpoint/{}_ckpt.pth'.format(net))
+        checkpoint = torch.load(r'./checkpoint/best_{}_ckpt.pth'.format(net))
         print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],checkpoint['acc']))
 
-        # checkpoint = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
-        # self.net.load_state_dict(checkpoint['net'])
+        checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
+
         from utils import remove_prefix
-        self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
-        print('训练时，最佳的准确率的结果为 {} %'.format(checkpoint['acc']))
+        print('训练时，最佳的准确率的结果为 {} %'.format(checkpoint_best['acc']))
+        if type == 'best':
+            self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
+        elif type == 'last':
+            self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
         if self.use_gpu:
             self.net = self.net.cuda()
         self.net.eval()
+        return self.net
 
     def predict(self, image_path):
         '''
@@ -98,36 +102,37 @@ class Prediction():
     def ensemble(self):
         # 首先找到文件夹下所有的模型
         import glob
-        paths = glob.glob('checkpoint/best*')
+        paths = glob.glob(r'./checkpoint/best*')
         for path in paths:
             net = path.split('_')[1]
             self.nets.append(self.load_model(net)) # 得到所有的模型
     
     # 对所有模型进行投票
-    def ensemble_vote(self, img_path):
+    def ensemble_vote(self, image_path):
         vote_labels = torch.zeros(self.num_classes)
         for model in self.nets:
             self.net = model
-            pred_label = self.predict(img_path)['label']
+            pred_label = self.predict(image_path)['label']
             vote_labels[pred_label] += 1
-        vote_label = np.argmax(vote_label.cpu().detach().numpy())
+        vote_label = np.argmax(vote_labels.cpu().detach().numpy())
         return {"label": vote_label, 'class':self.classes[vote_label]}
 
     # 所有模型的均值法
-    def ensemble_mean(self, img_path, weights = [1]):
-        mean_labels = torch.zero(self.num_classes)
+    def ensemble_mean(self, image_path, weights = [1]):
+        mean_labels = torch.zeros(self.num_classes)
+
         if weights == [1]:
             weights = [1]*len(self.nets)
         assert len(weights) == len(self.nets)
         for i,model in enumerate(self.nets):
             self.net = model
-            pred_prob = self.predict(img_path)['label_prob']
-            mean_labels = mean_labels + pred_prob*weights[i]
+            pred_prob = self.predict(image_path)['label_prob']
+            mean_labels = mean_labels + pred_prob*weights
         mean_labels /= len(self.nets)
         mean_label = np.argmax(mean_labels.cpu().detach().numpy())
         return {'label':mean_label, 'class': self.classes[mean_label]}
 
-def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = ''):
+def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
     import pandas as pd
     test = pd.read_csv('./data/sample_submit.csv')
 
@@ -157,8 +162,9 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = ''):
     
     
 if __name__ == '__main__':
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '3'
-    root = './data/test//' # 文件夹的路径
+# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+    root = r'./data/test//' # 文件夹的路径
     num_classes = 3 # 类别
-    net = 'ConvNeXt-L'
-    save_csv(path = 'submit_{}.csv'.format(net),net = net, type = 'mean')
+    net = 'ensemble'
+    type = 'mean'
+    save_csv(path = 'submit_{}.csv'.format(net),net = net, type = type)
