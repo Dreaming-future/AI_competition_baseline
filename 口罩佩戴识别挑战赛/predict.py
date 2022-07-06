@@ -1,7 +1,6 @@
 import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
-import os
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -31,7 +30,7 @@ class Prediction():
         模型初始化，必须在此方法中加载模型
         '''
         print('==> Resuming from checkpoint..')
-        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+        # assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
         
         from nets.ConvNeXt import convnext_tiny,convnext_base,convnext_large,convnext_xlarge
         from nets.DenseNet import DenseNet201,DenseNet169
@@ -63,7 +62,7 @@ class Prediction():
         print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],checkpoint['acc']))
 
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
-
+        # self.net.load_state_dict(checkpoint['net'])
         from utils import remove_prefix
         print('训练时，最佳的准确率的结果为 {} %'.format(checkpoint_best['acc']))
         if type == 'best':
@@ -129,8 +128,28 @@ class Prediction():
             pred_prob = self.predict(image_path)['label_prob']
             mean_labels = mean_labels + pred_prob*weights
         mean_labels /= len(self.nets)
-        mean_label = np.argmax(mean_labels.cpu().detach().numpy())
+        # 取概率最大的值
+        mean_label = self.ensemble_get_mean_label(mean_labels)
         return {'label':mean_label, 'class': self.classes[mean_label]}
+
+    def ensemble_get_mean_label(self, mean_labels, type = 'max'):
+        if type == 'max':
+            res = np.argmax(mean_labels.cpu().detach().numpy())
+        # 利用阈值法进行处理
+        elif type == 'threshold':   
+            # 第一次后处理未涉及的难样本 index
+            # 第一次后处理 - 将预测概率值大于 0.5 的样本作为分类的类别
+            threshold = 0.5
+            flag = False
+            for index,prob in enumerate(mean_labels):
+                if prob > threshold:
+                    res = index
+                    flag = True
+                    break
+            # 进行第二次处理
+            if not flag:
+                res = np.argmax(mean_labels.cpu().detach().numpy())
+        return res
 
 def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
     import pandas as pd
@@ -160,11 +179,23 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
     print("==> 测试完毕，正在保存文件 {}".format(path))
     test.to_csv( path, index=False)
     
-    
+import argparse    
 if __name__ == '__main__':
-# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+    parser = argparse.ArgumentParser(description='PyTorch Classification Predict')
+    parser.add_argument('--net', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
+                                                       'ResNet34','ResNet50','ResNet101',   
+                                                       'DenseNet','DenseNet121','DenseNet169','DenseNet201',
+                                                       'MobileNetv1','MobileNetv2',
+                                                       'ResNeXt50_32x4d','ResNeXt101_32x8d',
+                                                       'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
+                                                       'ViT-B','ViT-L','ViT-H','Swin-L','ensemble'], default='ensemble', help='net type')
+    parser.add_argument('--type','-t',type=str, choices=['mean','vote'], default='vote')
+    parser.add_argument('-nc',type = int, default=3)
+    args = parser.parse_args()
+    print(args)
+
     root = r'./data/test//' # 文件夹的路径
-    num_classes = 3 # 类别
-    net = 'ensemble'
-    type = 'mean'
+    num_classes = args.nc # 类别
+    net = args.net
+    type = args.type
     save_csv(path = 'submit_{}.csv'.format(net),net = net, type = type)
