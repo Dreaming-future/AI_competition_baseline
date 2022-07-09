@@ -27,7 +27,7 @@ class Prediction():
         self.Ensemble = False
         self.nets = [] # 集成模型的列表
 
-    def load_model(self, net = 'ConvNeXt-B', type = 'best'):
+    def load_model(self, net = 'ConvNeXt-B', type = 'best', threshold = 98.5):
         '''
         模型初始化，必须在此方法中加载模型
         '''
@@ -38,20 +38,29 @@ class Prediction():
         self.net = Get_model(net, num_classes=self.num_classes)
 
         checkpoint = torch.load(r'./checkpoint/{}_ckpt.pth'.format(net))
-        print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],checkpoint['acc']))
+        acc = checkpoint['acc']
+        print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],acc))
 
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
+        best_acc = checkpoint_best['acc']
         # self.net.load_state_dict(checkpoint['net'])
         from utils import remove_prefix
-        print('训练时，最佳的准确率的结果为 {} %'.format(checkpoint_best['acc']))
-        if type == 'best':
+        print('训练时，最佳的准确率的结果为 {} %'.format(best_acc))
+
+        flag = True
+        if type == 'best' and best_acc >= threshold:
             self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
-        elif type == 'last':
+        elif type == 'last' and acc >= threshold:
             self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
-        if self.use_gpu:
-            self.net = self.net.cuda()
-        self.net.eval()
-        return self.net
+        else:
+            flag = False
+        if flag:
+            if self.use_gpu:
+                self.net = torch.nn.DataParallel(self.net)
+                self.net = self.net.cuda()
+            self.net.eval()
+
+        return flag, self.net
 
     def predict(self, image_path):
         '''
@@ -83,7 +92,12 @@ class Prediction():
         paths = glob.glob(r'./checkpoint/best*')
         for path in paths:
             net = path.split('_')[1]
-            self.nets.append(self.load_model(net)) # 得到所有的模型
+            flag,model = self.load_model(net)
+            if flag:
+                print("==> #--------------------------------------#")
+                print("==> # 筛选{}模型进入集成模型".format(net))
+                print("==> #--------------------------------------#")
+                self.nets.append(model) # 得到所有的模型
     
     # 对所有模型进行投票
     def ensemble_vote(self, image_path):
@@ -105,13 +119,13 @@ class Prediction():
         for i,model in enumerate(self.nets):
             self.net = model
             pred_prob = self.predict(image_path)['label_prob']
-            mean_labels = mean_labels + pred_prob*weights
+            mean_labels = mean_labels + pred_prob
         mean_labels /= len(self.nets)
         # 取概率最大的值
-        mean_label = self.ensemble_get_mean_label(mean_labels)
+        mean_label = self.ensemble_get_mean_label(mean_labels, image_path)
         return {'label':mean_label, 'class': self.classes[mean_label]}
 
-    def ensemble_get_mean_label(self, mean_labels, type = 'max'):
+    def ensemble_get_mean_label(self, mean_labels, image_path, type = 'threshold'):
         if type == 'max':
             res = np.argmax(mean_labels.cpu().detach().numpy())
         # 利用阈值法进行处理
@@ -128,6 +142,7 @@ class Prediction():
             # 进行第二次处理
             if not flag:
                 res = np.argmax(mean_labels.cpu().detach().numpy())
+                print(image_path, mean_labels,self.classes[res])
         return res
 
 def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
@@ -161,27 +176,28 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
 import argparse    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Classification Predict')
-    parser.add_argument('--net', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
+    parser.add_argument('--net', '--model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
                                                        'ResNet34','ResNet50','ResNet101',   
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
-                                                       'ResNeXt50_32x4d','ResNeXt101_32x8d',
-                                                       'EfficientNet_b0','EfficientNet_b1','EfficientNet_b2','EfficientNet_b3','EfficientNet_b4','EfficienNet_b5','EfficientNet_b6','EfficientNet_b7','EfficientNet_b8',
+                                                       'ResNeXt50-32x4d','ResNeXt101-32x8d',
+                                                       'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
                                                        'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'Swin-M','Swin-L'
+                                                       'Swin-M','Swin-L',
                                                        'ViT-B','ViT-L','ViT-H',
-                                                       'CaiT_s24','CaiT_xxs24','CaiT_xxs36',
+                                                       'CaiT-s24','CaiT-xxs24','CaiT-xxs36',
                                                        'DeiT-B','DeiT-T','DeiT-S',
                                                        'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1',
-                                                       'ensemble'], default='ensemble', help='net type')
-    parser.add_argument('--type','-t',type=str, choices=['mean','vote'], default='vote')
-    parser.add_argument('-nc',type = int, default=3)
+                                                       'ensemble'], default='ensemble', help='net/model type')
+    parser.add_argument('--type','-t',type=str, choices=['mean','vote'],default = 'vote',  help='Ensemble type')
+    parser.add_argument('--num-classes', '-nc',type = int, default=3)
     args = parser.parse_args()
     print(args)
 
     root = r'./data/test//' # 文件夹的路径
-    num_classes = args.nc # 类别
+    num_classes = args.num_classes # 类别
     net = args.net
     type = args.type
-    save_csv(path = 'submit_{}.csv'.format(net),net = net, type = type)
+    from datetime import datetime
+    save_csv(path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S")),net = net, type = type)
