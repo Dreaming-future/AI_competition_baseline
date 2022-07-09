@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 
 
-def Get_model(net, num_classes = 1000):
+def Get_model(net, num_classes = 1000, verbose = False):
     if net == 'VGG16':
         from nets.VGG import VGG16_bn
         model = VGG16_bn(num_classes)
@@ -47,37 +47,37 @@ def Get_model(net, num_classes = 1000):
     elif net == 'MobileNetv2':
         from nets.MobileNetv2 import MobileNetV2
         model = MobileNetV2(num_classes)
-    elif net == 'ResNeXt50_32x4d':
+    elif net == 'ResNeXt50-32x4d':
         from nets.ResNeXt import ResNeXt50_32x4d
         model = ResNeXt50_32x4d(num_classes)
-    elif net == 'ResNeXt101_32x8d':
+    elif net == 'ResNeXt101-32x8d':
         from nets.ResNeXt import ResNeXt101_32x8d
         model = ResNeXt101_32x8d(num_classes)
-    elif net == 'EfficientNet_b0':
+    elif net == 'EfficientNet-b0':
         from nets.EfficientNet import EfficientNet_b0
         model = EfficientNet_b0(num_classes)
-    elif net == 'EfficientNet_b1':
+    elif net == 'EfficientNet-b1':
         from nets.EfficientNet import EfficientNet_b1
         model = EfficientNet_b1(num_classes)
-    elif net == 'EfficientNet_b2':
+    elif net == 'EfficientNet-b2':
         from nets.EfficientNet import EfficientNet_b2
         model = EfficientNet_b2(num_classes)
-    elif net == 'EfficientNet_b3':
+    elif net == 'EfficientNet-b3':
         from nets.EfficientNet import EfficientNet_b3
         model = EfficientNet_b3(num_classes)
-    elif net == 'EfficientNet_b4':
+    elif net == 'EfficientNet-b4':
         from nets.EfficientNet import EfficientNet_b4
         model = EfficientNet_b4(num_classes)
-    elif net == 'EfficientNet_b5':
+    elif net == 'EfficientNet-b5':
         from nets.EfficientNet import EfficientNet_b5
         model = EfficientNet_b5(num_classes)
     elif net == 'EfficientNet_b6':
         from nets.EfficientNet import EfficientNet_b6
         model = EfficientNet_b6(num_classes)
-    elif net == 'EfficientNet_b7':
+    elif net == 'EfficientNet-b7':
         from nets.EfficientNet import EfficientNet_b7
         model = EfficientNet_b7(num_classes)
-    elif net == 'EfficientNet_b8':
+    elif net == 'EfficientNet-b8':
         from nets.EfficientNet import EfficientNet_b8
         model = EfficientNet_b8(num_classes)
     elif net == 'EfficientNetv2-S':
@@ -122,13 +122,13 @@ def Get_model(net, num_classes = 1000):
     elif net == 'Swin-L':
         from nets.Swin import swin_large_patch4_window7_224
         model = swin_large_patch4_window7_224(num_classes)
-    elif net == 'CaiT_s24':
+    elif net == 'CaiT-s24':
         from nets.CaiT import CaiT_s24
         model = CaiT_s24(num_classes)
-    elif net == 'CaiT_xxs24':
+    elif net == 'CaiT-xxs24':
         from nets.CaiT import CaiT_xxs24
         model = CaiT_xxs24(num_classes)
-    elif net == 'CaiT_xxs36':
+    elif net == 'CaiT-xxs36':
         from nets.CaiT import CaiT_xxs36
         model = CaiT_xxs36(num_classes)
     elif net == 'DeiT-B':
@@ -151,7 +151,10 @@ def Get_model(net, num_classes = 1000):
         model = BiT_M_resnet101x3(num_classes)
     elif net == 'BiT-M-resnet101x1':
         from nets.BiT import BiT_M_resnet101x1
-        model = BiT_M_resnet101x1(num_classes) 
+        model = BiT_M_resnet101x1(num_classes)
+    if verbose:
+        from torchinfo import summary
+        summary(model,(2,3,224,224))
     return model
 
 def remove_prefix(state_dict, prefix):
