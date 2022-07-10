@@ -33,7 +33,7 @@ class Prediction():
         '''
         if hasattr(torch.cuda, 'empty_cache'):
             torch.cuda.empty_cache()
-            
+
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
 
@@ -42,14 +42,14 @@ class Prediction():
 
         checkpoint = torch.load(r'./checkpoint/{}_ckpt.pth'.format(net))
         acc = checkpoint['acc']
-        print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],acc))
-
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
         best_acc = checkpoint_best['acc']
-        from utils import remove_prefix
+        
+        print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],acc))
         print('训练时，最佳的准确率的结果为 {} %'.format(best_acc))
+        
         flag = True
-
+        from utils import remove_prefix
         if type == 'best' and best_acc >= threshold:
             self.net.load_state_dict(remove_prefix(checkpoint_best['net'], 'module.'))
         elif type == 'last' and acc >= threshold:
@@ -62,6 +62,7 @@ class Prediction():
             self.net = torch.nn.DataParallel(self.net)
             self.net = self.net.cuda()
         self.net.eval()
+
         return flag
 
     def predict(self, image_path):
@@ -89,7 +90,7 @@ class Prediction():
         return {"label": pred_label, 'class':self.classes[pred_label],"label_prob":prob[0]}
 
 
-def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
+def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
     import pandas as pd
     test = pd.read_csv('./data/sample_submit.csv')
     pred = Prediction()
@@ -126,10 +127,12 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                     print("==> #--------------------------------------#")
             # 对投票结果进行处理，取出最佳的投票结果
             test_vote = np.array(test_vote.iloc[:,2:])
-            with tqdm(total=total,desc=f'最后集成处理》》》',mininterval=0.3) as pbar:
+            with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
                 for i,img_path in enumerate(test['path']):
                     c = np.argmax(test_vote[i])
                     test.iloc[i,1] = pred.classes[c]
+                    pbar.update(1)
+            
         elif type == 'mean':
             count = 0
             test_mean = test.copy()
@@ -144,7 +147,7 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                     print("==> #--------------------------------------#")
                     print("==> # 筛选{}模型进入集成模型".format(net))
                     print("==> #--------------------------------------#")
-                    with tqdm(total=total,desc=f'{net} Predict Pictures {total}',mininterval=0.3) as pbar:
+                    with tqdm(total=total,desc=f'==> {net} Predict Pictures {total}',mininterval=0.3) as pbar:
                         for i,img_path in enumerate(test['path']):
                             pre = pred.predict(image_path=root + img_path)
                             for j,prob in enumerate(pre['label_prob']):
@@ -159,12 +162,12 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
             # 对均值结果进行处理，取出最优结果
             test_mean = np.array(test_mean.iloc[:,2:])
             test_mean /= count
-            for i,img_path in enumerate(test['path']):
-                # 第一次后处理未涉及的难样本 index
-                # 第一次后处理 - 将预测概率值大于 0.5 的样本作为分类的类别
-                threshold = 0.5
-                flag = False
-                with tqdm(total=total,desc=f'最后集成处理》》》',mininterval=0.3) as pbar:
+            with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
+                for i,img_path in enumerate(test['path']):
+                    # 第一次后处理未涉及的难样本 index
+                    # 第一次后处理 - 将预测概率值大于 0.5 的样本作为分类的类别
+                    threshold = 0.5
+                    flag = False
                     for index,prob in enumerate(test_mean):
                         if prob > threshold:
                             res = index
@@ -174,17 +177,18 @@ def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                     if not flag:
                         res = np.argmax(test_mean[i])
                     test.iloc[i,1] = pred.classes[res]
-            print("集成一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
+                    pbar.update(1)
+        print("集成模型一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
     else:
         pred.load_model(net)
-        with tqdm(total=total,desc=f'Predict Pictures {total}',mininterval=0.3) as pbar:
+        with tqdm(total=total,desc=f'==> Predict Pictures {total}',mininterval=0.3) as pbar:
             for i,img_path in enumerate(test['path']):
                 pre = pred.predict(image_path=root + img_path)
                 test.iloc[i,1] = pre['class']
                 pbar.update(1)
             
     print("==> 测试完毕，正在保存文件 {}".format(path))
-    test.to_csv( path, index=False)
+    test.to_csv( csv_path, index=False)
     
 import argparse    
 if __name__ == '__main__':
@@ -213,4 +217,4 @@ if __name__ == '__main__':
     net = args.net
     type = args.type
     from datetime import datetime
-    save_csv(path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S")),net = net, type = type)
+    save_csv(csv_path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S")),net = net, type = type)

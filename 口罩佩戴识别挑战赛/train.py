@@ -83,7 +83,7 @@ if __name__ == '__main__':
         lr = checkpoint['lr']
         if args.resume_lr != 1:
             lr = args.resume_lr
-        print("从EPOCH = {} 开始训练， 学习率为 {} , 最佳的结果ACC为 {:.2f}, 上一次的结果ACC为{}".format(start_epoch + 1,args.lr,best_acc,last_acc))
+        print("从EPOCH = {} 开始训练， 学习率为 {} , 最佳的结果ACC为 {:.2f}, 上一次的结果ACC为{}".format(start_epoch + 1, lr, best_acc, last_acc))
 
     #------------------------------------#
     #  使用GPU，并且判断是否利用并行训练
