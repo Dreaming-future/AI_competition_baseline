@@ -153,8 +153,11 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                             for j,prob in enumerate(pre['label_prob']):
                                 test_mean.iloc[i,2 + j] += prob
                             pbar.update(1)
-                    print(test_mean.head(5))
                     count += 1
+                    test_mean2 = test_mean.copy()
+                    test_mean2.iloc[:,2:] /= count
+                    print(test_mean2.head(5))
+                    
                 else:
                     print("==> #--------------------------------------#")
                     print("==> # 【未筛选{}模型进入集成模型】".format(net))
@@ -187,7 +190,7 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                 test.iloc[i,1] = pre['class']
                 pbar.update(1)
             
-    print("==> 测试完毕，正在保存文件 {}".format(path))
+    print("==> 测试完毕，正在保存文件 {}".format(csv_path))
     test.to_csv( csv_path, index=False)
     
 import argparse    
