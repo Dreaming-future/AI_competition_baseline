@@ -31,6 +31,9 @@ class Prediction():
         '''
         模型初始化，必须在此方法中加载模型
         '''
+        if hasattr(torch.cuda, 'empty_cache'):
+            torch.cuda.empty_cache()
+            
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
 
@@ -43,24 +46,23 @@ class Prediction():
 
         checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
         best_acc = checkpoint_best['acc']
-        # self.net.load_state_dict(checkpoint['net'])
         from utils import remove_prefix
         print('训练时，最佳的准确率的结果为 {} %'.format(best_acc))
-
         flag = True
+
         if type == 'best' and best_acc >= threshold:
-            self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
+            self.net.load_state_dict(remove_prefix(checkpoint_best['net'], 'module.'))
         elif type == 'last' and acc >= threshold:
             self.net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
         else:
+            self.net.load_state_dict(remove_prefix(checkpoint_best['net'], 'module.'))
             flag = False
-        if flag:
-            if self.use_gpu:
-                self.net = torch.nn.DataParallel(self.net)
-                self.net = self.net.cuda()
-            self.net.eval()
 
-        return flag, self.net
+        if self.use_gpu:
+            self.net = torch.nn.DataParallel(self.net)
+            self.net = self.net.cuda()
+        self.net.eval()
+        return flag
 
     def predict(self, image_path):
         '''
@@ -86,97 +88,108 @@ class Prediction():
         # print("label:", pred_label)
         return {"label": pred_label, 'class':self.classes[pred_label],"label_prob":prob[0]}
 
-    def ensemble(self):
-        # 首先找到文件夹下所有的模型
-        import glob
-        paths = glob.glob(r'./checkpoint/best*')
-        for path in paths:
-            net = path.split('_')[1]
-            flag,model = self.load_model(net)
-            if flag:
-                print("==> #--------------------------------------#")
-                print("==> # 筛选{}模型进入集成模型".format(net))
-                print("==> #--------------------------------------#")
-                self.nets.append(model) # 得到所有的模型
-    
-    # 对所有模型进行投票
-    def ensemble_vote(self, image_path):
-        vote_labels = torch.zeros(self.num_classes)
-        for model in self.nets:
-            self.net = model
-            pred_label = self.predict(image_path)['label']
-            vote_labels[pred_label] += 1
-        vote_label = np.argmax(vote_labels.cpu().detach().numpy())
-        return {"label": vote_label, 'class':self.classes[vote_label]}
-
-    # 所有模型的均值法
-    def ensemble_mean(self, image_path, weights = [1]):
-        mean_labels = torch.zeros(self.num_classes)
-
-        if weights == [1]:
-            weights = [1]*len(self.nets)
-        assert len(weights) == len(self.nets)
-        for i,model in enumerate(self.nets):
-            self.net = model
-            pred_prob = self.predict(image_path)['label_prob']
-            mean_labels = mean_labels + pred_prob
-        mean_labels /= len(self.nets)
-        # 取概率最大的值
-        mean_label = self.ensemble_get_mean_label(mean_labels, image_path)
-        return {'label':mean_label, 'class': self.classes[mean_label]}
-
-    def ensemble_get_mean_label(self, mean_labels, image_path, type = 'threshold'):
-        if type == 'max':
-            res = np.argmax(mean_labels.cpu().detach().numpy())
-        # 利用阈值法进行处理
-        elif type == 'threshold':   
-            # 第一次后处理未涉及的难样本 index
-            # 第一次后处理 - 将预测概率值大于 0.5 的样本作为分类的类别
-            threshold = 0.5
-            flag = False
-            for index,prob in enumerate(mean_labels):
-                if prob > threshold:
-                    res = index
-                    flag = True
-                    break
-            # 进行第二次处理
-            if not flag:
-                res = np.argmax(mean_labels.cpu().detach().numpy())
-                print(image_path, mean_labels,self.classes[res])
-        return res
 
 def save_csv(path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
     import pandas as pd
     test = pd.read_csv('./data/sample_submit.csv')
-
     pred = Prediction()
-    if net == 'ensemble':
-        pred.ensemble()
-    else:
-        pred.load_model(net)
 
     total = len(test)
     print("==> 开始测试文件中的图片,一共有{}张图片需要测试".format(total))
-    with tqdm(total=total,desc=f'Predict Pictures {total}',mininterval=0.3) as pbar:
-        for i,img_path in enumerate(test['path']):
-            if net == 'ensemble':
-                if type == 'vote':
-                    pre = pred.ensemble_vote(image_path=root + img_path)
-                elif type == 'mean':
-                    pre = pred.ensemble_mean(image_path=root + img_path)
-            else:
+    if net == 'ensemble':
+        # 一个一个的载入模型进行测试，测试成功后对投票结果进行整合
+        import glob
+        paths = glob.glob(r'./checkpoint/best*')
+        NET = []
+        if type == 'vote':
+            test_vote = test.copy()
+            for i in range(num_classes):
+                test_vote['label_%d'%i] = 0
+            for path in paths:
+                net = path.split('_')[1]
+                NET.append(net)
+                # 判断载入的模型是否符合标准，如果达到了标准就进行测试
+                flag = pred.load_model(net)
+                if flag:
+                    print("==> #--------------------------------------#")
+                    print("==> # 筛选{}模型进入集成模型".format(net))
+                    print("==> #--------------------------------------#")
+                    with tqdm(total=total,desc=f'{net} Predict Pictures {total}',mininterval=0.3) as pbar:
+                        for i,img_path in enumerate(test['path']):
+                            pre = pred.predict(image_path=root + img_path)
+                            test_vote.iloc[i,2 + pre['label']] += 1
+                            pbar.update(1)
+                    print(test_vote.head(5))
+                else:
+                    print("==> #--------------------------------------#")
+                    print("==> # 【未筛选{}模型进入集成模型】".format(net))
+                    print("==> #--------------------------------------#")
+            # 对投票结果进行处理，取出最佳的投票结果
+            test_vote = np.array(test_vote.iloc[:,2:])
+            with tqdm(total=total,desc=f'最后集成处理》》》',mininterval=0.3) as pbar:
+                for i,img_path in enumerate(test['path']):
+                    c = np.argmax(test_vote[i])
+                    test.iloc[i,1] = pred.classes[c]
+        elif type == 'mean':
+            count = 0
+            test_mean = test.copy()
+            for i in range(num_classes):
+                test_mean['label_prob%d'%i] = 0
+            for path in paths:
+                net = path.split('_')[1]
+                NET.append(net)
+                # 判断载入的模型是否符合标准，如果达到了标准就进行测试
+                flag = pred.load_model(net)
+                if flag:
+                    print("==> #--------------------------------------#")
+                    print("==> # 筛选{}模型进入集成模型".format(net))
+                    print("==> #--------------------------------------#")
+                    with tqdm(total=total,desc=f'{net} Predict Pictures {total}',mininterval=0.3) as pbar:
+                        for i,img_path in enumerate(test['path']):
+                            pre = pred.predict(image_path=root + img_path)
+                            for j,prob in enumerate(pre['label_prob']):
+                                test_mean.iloc[i,2 + j] += prob
+                            pbar.update(1)
+                    print(test_mean.head(5))
+                    count += 1
+                else:
+                    print("==> #--------------------------------------#")
+                    print("==> # 【未筛选{}模型进入集成模型】".format(net))
+                    print("==> #--------------------------------------#")
+            # 对均值结果进行处理，取出最优结果
+            test_mean = np.array(test_mean.iloc[:,2:])
+            test_mean /= count
+            for i,img_path in enumerate(test['path']):
+                # 第一次后处理未涉及的难样本 index
+                # 第一次后处理 - 将预测概率值大于 0.5 的样本作为分类的类别
+                threshold = 0.5
+                flag = False
+                with tqdm(total=total,desc=f'最后集成处理》》》',mininterval=0.3) as pbar:
+                    for index,prob in enumerate(test_mean):
+                        if prob > threshold:
+                            res = index
+                            flag = True
+                            break
+                    # 进行第二次处理
+                    if not flag:
+                        res = np.argmax(test_mean[i])
+                    test.iloc[i,1] = pred.classes[res]
+            print("集成一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
+    else:
+        pred.load_model(net)
+        with tqdm(total=total,desc=f'Predict Pictures {total}',mininterval=0.3) as pbar:
+            for i,img_path in enumerate(test['path']):
                 pre = pred.predict(image_path=root + img_path)
-            test.iloc[i][1] = pre['class'] # 写入标签
-            pbar.update(1)
-            # if (i+1)%100 == 0:
-            #     print("已测试完毕 {} 张图片".format(i+1))
+                test.iloc[i,1] = pre['class']
+                pbar.update(1)
+            
     print("==> 测试完毕，正在保存文件 {}".format(path))
     test.to_csv( path, index=False)
     
 import argparse    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Classification Predict')
-    parser.add_argument('--net', '--model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
+    parser.add_argument('--net', '--model', '-net', '-model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
                                                        'ResNet34','ResNet50','ResNet101',   
                                                        'DenseNet','DenseNet121','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
