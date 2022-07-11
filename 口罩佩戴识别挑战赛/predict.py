@@ -27,26 +27,25 @@ class Prediction():
         self.Ensemble = False
         self.nets = [] # 集成模型的列表
 
-    def load_model(self, net = 'ConvNeXt-B', type = 'best', threshold = 98.5):
+    def load_model(self, net = 'ConvNeXt-B', type = 'best', num_classes = 3, threshold = 98.5, checkpoint_path = 'checkpoint', verbose = True):
         '''
         模型初始化，必须在此方法中加载模型
         '''
-        if hasattr(torch.cuda, 'empty_cache'):
-            torch.cuda.empty_cache()
+        from utils import empty_cache
+        empty_cache()
+        assert os.path.isdir(checkpoint_path), 'Error: no checkpoint directory found!'
+        self.net = Get_model(net, num_classes= num_classes)
 
-        print('==> Resuming from checkpoint..')
-        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-
-        print("我们使用的是 {} 模型进行测试".format(net))
-        self.net = Get_model(net, num_classes=self.num_classes)
-
-        checkpoint = torch.load(r'./checkpoint/{}_ckpt.pth'.format(net))
+        checkpoint = torch.load(r'./{}/{}_ckpt.pth'.format(checkpoint_path ,net))
         acc = checkpoint['acc']
-        checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(net))
+        checkpoint_best = torch.load('./{}/best_{}_ckpt.pth'.format(checkpoint_path ,net))
         best_acc = checkpoint_best['acc']
         
-        print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],acc))
-        print('训练时，最佳的准确率的结果为 {} %'.format(best_acc))
+        if verbose:
+            print('==> Resuming from checkpoint..')
+            print("我们使用的是 {} 模型进行测试".format(net))
+            print('训练时，一共迭代了{}次，最后一次的准确率大概是 {} %'.format(checkpoint['epoch'],acc))
+            print('训练时，最佳的准确率的结果为 {} %'.format(best_acc))
         
         flag = True
         from utils import remove_prefix
@@ -90,7 +89,7 @@ class Prediction():
         return {"label": pred_label, 'class':self.classes[pred_label],"label_prob":prob[0]}
 
 
-def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
+def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshold = 98.5):
     import pandas as pd
     test = pd.read_csv('./data/sample_submit.csv')
     pred = Prediction()
@@ -108,10 +107,10 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                 test_vote['label_%d'%i] = 0
             for path in paths:
                 net = path.split('_')[1]
-                NET.append(net)
                 # 判断载入的模型是否符合标准，如果达到了标准就进行测试
-                flag = pred.load_model(net)
+                flag = pred.load_model(net, threshold= threshold)
                 if flag:
+                    NET.append(net)
                     print("==> #--------------------------------------#")
                     print("==> # 筛选{}模型进入集成模型".format(net))
                     print("==> #--------------------------------------#")
@@ -131,8 +130,7 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                 for i,img_path in enumerate(test['path']):
                     c = np.argmax(test_vote[i])
                     test.iloc[i,1] = pred.classes[c]
-                    pbar.update(1)
-            
+                    pbar.update(1)      
         elif type == 'mean':
             count = 0
             test_mean = test.copy()
@@ -140,10 +138,10 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                 test_mean['label_prob%d'%i] = 0
             for path in paths:
                 net = path.split('_')[1]
-                NET.append(net)
                 # 判断载入的模型是否符合标准，如果达到了标准就进行测试
-                flag = pred.load_model(net)
+                flag = pred.load_model(net, threshold= threshold)
                 if flag:
+                    NET.append(net)
                     print("==> #--------------------------------------#")
                     print("==> # 筛选{}模型进入集成模型".format(net))
                     print("==> #--------------------------------------#")
@@ -156,29 +154,56 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                     count += 1
                     test_mean2 = test_mean.copy()
                     test_mean2.iloc[:,2:] /= count
-                    print(test_mean2.head(5))
-                    
+                    print(test_mean2.head(5))           
                 else:
                     print("==> #--------------------------------------#")
                     print("==> # 【未筛选{}模型进入集成模型】".format(net))
                     print("==> #--------------------------------------#")
             # 对均值结果进行处理，取出最优结果
-            test_mean = np.array(test_mean.iloc[:,2:])
-            test_mean /= count
+            test_mean = np.array(test_mean.iloc[:,2:]) / count
+            # print(test_mean)
             with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
                 for i,img_path in enumerate(test['path']):
                     # 第一次后处理未涉及的难样本 index
-                    # 第一次后处理 - 将预测概率值大于 0.5 的样本作为分类的类别
-                    threshold = 0.5
+                    # 第一次后处理 - 将预测概率值大于 threshold 的样本作为分类的类别
+                    threshold = 0.6
                     flag = False
-                    for index,prob in enumerate(test_mean):
+                    for index,prob in enumerate(test_mean[i]):
                         if prob > threshold:
                             res = index
                             flag = True
                             break
                     # 进行第二次处理
                     if not flag:
-                        res = np.argmax(test_mean[i])
+                        max_indexs = np.argsort(test_mean[i])[-2:] # 取出最大的两个index
+                        if np.fabs(test_mean[i][max_indexs[0]] - test_mean[i][max_indexs[1]]) > 0.2:
+                            res = max_indexs[1]
+                        else:
+                            # ['mask_weared_incorrect', 'with_mask', 'without_mask']
+                            ans = np.sum(max_indexs)
+                            if ans == 3 or ans == 2: # 1 + 2 or 0 + 2
+                                # 导入分类模型，对是否带口罩进行细分类 ['with_mask', 'without_mask'] 
+                                pred.load_model('Swin-B', threshold= 0, num_classes = 2, checkpoint_path= 'checkpoint2', verbose = False)
+                                pre = pred.predict(image_path=root + img_path)
+                                # 如果最大两个类别分别是 'with_mask', 'without_mask'，那么只需要在基础上加1即可
+                                if ans == 3:
+                                    res = pre['label'] + 1
+                                # 如果最大两个类别分别是 'mask_weared_incorrect', 'with_mask'，那么需要判断
+                                elif ans == 2:
+                                    # 若细分类模型判断为1，即是'without_mask'
+                                    if pre['label'] == 1:
+                                        res = 2
+                                    else:
+                                        # 判断为0，说明有口罩存在，这时候选择的是'mask_weared_incorrect'
+                                        res = 0
+                            elif ans == 1: # 0 + 1 ['mask_weared_incorrect', 'with_mask']
+                                # 导入分类模型，对是否正确口罩的细分类
+                                pred.load_model('Swin-B', threshold= 0, num_classes= 2, checkpoint_path= 'checkpoint3', verbose = False)
+                                pre = pred.predict(image_path=root + img_path)
+                                res = pre['label'] # 不需要进行操作，直接即可
+                            else:
+                                res = np.argmax(test_mean[i])
+                            print(img_path, test_mean[i], pred.classes[res])
                     test.iloc[i,1] = pred.classes[res]
                     pbar.update(1)
         print("集成模型一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
@@ -189,7 +214,7 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote'):
                 pre = pred.predict(image_path=root + img_path)
                 test.iloc[i,1] = pre['class']
                 pbar.update(1)
-            
+       
     print("==> 测试完毕，正在保存文件 {}".format(csv_path))
     test.to_csv( csv_path, index=False)
     
@@ -204,14 +229,15 @@ if __name__ == '__main__':
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
                                                        'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'Swin-M','Swin-L',
+                                                       'Swin-B','Swin-L',
                                                        'ViT-B','ViT-L','ViT-H',
                                                        'CaiT-s24','CaiT-xxs24','CaiT-xxs36',
                                                        'DeiT-B','DeiT-T','DeiT-S',
                                                        'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1',
-                                                       'ensemble'], default='ensemble', help='net/model type')
-    parser.add_argument('--type','-t',type=str, choices=['mean','vote'],default = 'vote',  help='Ensemble type')
-    parser.add_argument('--num-classes', '-nc',type = int, default=3)
+                                                       'ensemble'], default='ensemble', help='net/model type 模型的类别')
+    parser.add_argument('--type','-t',type=str, choices=['mean','vote'],default = 'vote',  help='Ensemble type 集成模型形式')
+    parser.add_argument('--num-classes', '-nc',type = int, default=3, help = '分类的类别')
+    parser.add_argument('--threshold', '-td', type = float, default= 98.5, help = '设置选择模型的准确率的阈值')
     args = parser.parse_args()
     print(args)
 
@@ -219,5 +245,10 @@ if __name__ == '__main__':
     num_classes = args.num_classes # 类别
     net = args.net
     type = args.type
+    threshold = args.threshold
     from datetime import datetime
-    save_csv(csv_path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S")),net = net, type = type)
+    if type == 'mean':
+        csv_path = 'submit_{}_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"),threshold)
+    else:
+        csv_path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"))
+    save_csv(csv_path = csv_path,net = net, type = type, threshold = threshold)
