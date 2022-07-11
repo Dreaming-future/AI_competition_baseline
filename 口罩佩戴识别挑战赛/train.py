@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils import Get_model, LabelSmoothCELoss
+from utils import Get_model, LabelSmoothCELoss, empty_cache
 import os
 import argparse
 from utils import get_acc,EarlyStopping,remove_prefix
@@ -15,34 +15,35 @@ from utils_fit import fit_one_epoch, freeze_net
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Classification Training')
     parser.add_argument('--lr','-lr', default=0.004, type=float, help='learning rate')
-    parser.add_argument('--num-classes','-nc', default=3, type=float, help='learning rate')
+    parser.add_argument('--num-classes','-nc', default=3, type=int, help='learning rate')
     parser.add_argument('--cuda', '-gpu', action='store_true', default=False, help =' use GPU?')
     parser.add_argument('--batch-size','-bs', default=64, type=int, help = "Batch Size for Training")
     parser.add_argument('--num-workers', '-nw', default=4, type=int, help = 'num-workers')
     parser.add_argument('--net', '--model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
                                                        'ResNet34','ResNet50','ResNet101',   
-                                                       'DenseNet','DenseNet121','DenseNet169','DenseNet201',
+                                                       'DenseNet','DenseNet121','DenseNet161','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
                                                        'ResNeXt50-32x4d','ResNeXt101-32x8d',
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
                                                        'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'Swin-M','Swin-L',
+                                                       'Swin-B','Swin-L',
                                                        'ViT-B','ViT-L','ViT-H',
                                                        'CaiT-s24','CaiT-xxs24','CaiT-xxs36',
                                                        'DeiT-B','DeiT-T','DeiT-S',
                                                        'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1'], default='MobileNetv2', help='net type')
     parser.add_argument('--epochs', '-e', type = int, default=20, help = 'Epochs')
-    parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-    parser.add_argument('--resume-lr','-rlr',type = float, default=1)
+    parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint 断点续传')
+    parser.add_argument('--resume-lr','-rlr',type = float, default=1, help = '断点训练时的学习率是否改变')
     parser.add_argument('--patience', '-p', type = int, default=7, help='patience for Early stop')
     parser.add_argument('--optim','-o',type = str, choices = ['sgd','adam','adamw'], default = 'adamw', help = 'choose optimizer')
-    parser.add_argument('--resize','-rs', type=int,default=224)
-    parser.add_argument('--f','-f',action='store_true',help='choose to freeze')
-    parser.add_argument('--fe','-fe',type=int,default=20)
-    parser.add_argument('--dp','-dp',action='store_false')
+    parser.add_argument('--resize','-rs', type=int,default=224, help = '图像的shape')
+    parser.add_argument('--f','-f',action='store_true',help='choose to freeze 是否使用冻结训练')
+    parser.add_argument('--fe','-fe',type=int,default=20, help = '冻结训练的迭代次数')
+    parser.add_argument('--dp','-dp',action='store_false', help = '是否使用并行训练，多GPU')
     parser.add_argument('--fp16','-fp16',action='store_true',help='是否使用混合精度训练')
-
+    parser.add_argument('--data', default='./data//', type = str, help = '数据集路径')
+    parser.add_argument('--checkpoint', '-ck', type = str, default='checkpoint', help = '保存模型')
     args = parser.parse_args()
     print(args)
     best_acc = 0  # best test accuracy
@@ -60,25 +61,29 @@ if __name__ == '__main__':
     patience = args.patience
     epochs = args.epochs
     Net = args.net
+    data = args.data
+    checkpoint_model = args.checkpoint
     # Train Data
-    trainloader = get_training_dataloader(batch_size = args.batch_size, num_workers = args.num_workers, resize = args.resize)
+    trainloader = get_training_dataloader(batch_size = args.batch_size, num_workers = args.num_workers, resize = args.resize, root=data)
     # testloader = get_test_dataloader(batch_size = args.batch_size, num_workers = args.num_workers, shuffle=False, resize = args.resize)
 
     #  Model
     print('==> Building model..')
     net = Get_model(Net, num_classes = num_classes)
-
+    if args.resume_lr != 1:
+        resume = True
     if resume:
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
-        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        
-        checkpoint = torch.load('./checkpoint/{}_ckpt.pth'.format(Net))
-        net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
-        # net.load_state_dict(checkpoint['net'])
-        last_acc = checkpoint['acc']
-        checkpoint_best = torch.load('./checkpoint/best_{}_ckpt.pth'.format(Net))
+        assert os.path.isdir(checkpoint_model), 'Error: no checkpoint directory found!'
+
+        checkpoint_best = torch.load('{}/best_{}_ckpt.pth'.format(checkpoint_model, Net))
         best_acc = checkpoint_best['acc']
+        empty_cache()
+        checkpoint = torch.load('{}/{}_ckpt.pth'.format(checkpoint_model, Net))
+        net.load_state_dict(remove_prefix(checkpoint['net'], 'module.'))
+
+        last_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
         lr = checkpoint['lr']
         if args.resume_lr != 1:
@@ -130,6 +135,6 @@ if __name__ == '__main__':
 
     for epoch in range(start_epoch, epochs):
         freeze_net(net, Net , epoch, freeze_epoch, Dp)
-        fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc)
+        fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
         
     torch.cuda.empty_cache()

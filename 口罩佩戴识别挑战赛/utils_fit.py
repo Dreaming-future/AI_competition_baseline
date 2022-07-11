@@ -2,7 +2,44 @@ from tqdm import tqdm
 import torch
 from utils import get_acc
 import os
-def fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc):
+
+def freeze_net(net, net_name, epoch, freeze_epoch, Dp):
+    if epoch < freeze_epoch:
+        for param in net.parameters():
+            param.requires_grad = False
+        try:
+            if 'ViT' in net_name or 'ConvNeXt' in net_name or 'BiT' in net_name or 'DeiT' in net_name or 'CaiT' in net_name or 'Swin' in net_name:
+                if Dp:
+                    for param in net.module.head.parameters():
+                        param.requires_grad = True
+                else:
+                    for param in net.head.parameters():
+                        param.requires_grad = True
+            elif 'ResNeXt' in net_name:
+                if Dp:
+                    for param in net.module.fc.parameters():
+                        param.requires_grad = True
+                else:
+                    for param in net.fc.parameters():
+                        param.requires_grad = True
+            else:
+                if Dp:
+                    for param in net.module.classifier.parameters():
+                        param.requires_grad = True
+                else:
+                    for param in net.classifier.parameters():
+                        param.requires_grad = True
+        except Exception as e:
+            print(net)
+            print("==>冻结分类层出现错误")
+            print(e)
+            exit()
+    else:
+        for param in net.parameters():
+            param.requires_grad = True
+
+
+def fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc, checkpoint = './checkpoint'):
     epoch_step = len(trainloader)
     if epoch_step == 0:
         raise ValueError("数据集过小，无法进行训练，请扩充数据集，或者减小batchsize")
@@ -79,9 +116,9 @@ def fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler
             'epoch': epoch + 1,
             'lr': lr,
         }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/best_{}_ckpt.pth'.format(save_net))
+        if not os.path.isdir(checkpoint):
+            os.mkdir(checkpoint)
+        torch.save(state, '{}/best_{}_ckpt.pth'.format(checkpoint, save_net))
         best_acc = train_acc
 
     print('Finish Train')
@@ -92,9 +129,7 @@ def fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler
         'epoch': epoch + 1,
         'lr': lr,
     }
-    if not os.path.isdir('checkpoint'):
-        os.mkdir('checkpoint')
-    torch.save(state, './checkpoint/{}_ckpt.pth'.format(save_net))
+    torch.save(state, '{}/{}_ckpt.pth'.format(checkpoint, save_net))
     
     early_stopping(train_loss, net)
     # 若满足 early stopping 要求
@@ -102,41 +137,6 @@ def fit_one_epoch(net, epoch, epochs, trainloader, optimizer, loss_fn, scheduler
         print("Early stopping")
         # 结束模型训练
         exit()
-
-def freeze_net(net, net_name, epoch, freeze_epoch, Dp):
-    if epoch < freeze_epoch:
-        for param in net.parameters():
-            param.requires_grad = False
-        try:
-            if 'ViT' in net_name or 'ConvNeXt' in net_name or 'BiT' in net_name or 'DeiT' in net_name or 'CaiT' in net_name:
-                if Dp:
-                    for param in net.module.head.parameters():
-                        param.requires_grad = True
-                else:
-                    for param in net.head.parameters():
-                        param.requires_grad = True
-            elif 'ResNeXt' in net_name:
-                if Dp:
-                    for param in net.module.fc.parameters():
-                        param.requires_grad = True
-                else:
-                    for param in net.fc.parameters():
-                        param.requires_grad = True
-            else:
-                if Dp:
-                    for param in net.module.classifier.parameters():
-                        param.requires_grad = True
-                else:
-                    for param in net.classifier.parameters():
-                        param.requires_grad = True
-        except Exception as e:
-            print(net)
-            print("==>冻结分类层出现错误")
-            print(e)
-            exit()
-    else:
-        for param in net.parameters():
-            param.requires_grad = True
 
 
 def fit_one_epoch_test(net, epoch, epochs, testloader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc):

@@ -6,7 +6,9 @@ import numpy as np
 import torch.nn.functional as F
 
 
-
+def empty_cache():
+    if hasattr(torch.cuda, 'empty_cache'):
+                torch.cuda.empty_cache()
 def Get_model(net, num_classes = 1000, verbose = False):
     if net == 'VGG16':
         from nets.VGG import VGG16_bn
@@ -35,9 +37,12 @@ def Get_model(net, num_classes = 1000, verbose = False):
     elif net == 'DenseNet121':
         from nets.DenseNet import DenseNet121
         model = DenseNet121(num_classes)
+    elif net == 'DenseNet161':
+        from nets.DenseNet import DenseNet161
+        model = DenseNet161(num_classes)
     elif net == 'DenseNet169':
         from nets.DenseNet import DenseNet169
-        net = DenseNet169(num_classes)
+        model = DenseNet169(num_classes)
     elif net == 'DenseNet201':
         from nets.DenseNet import DenseNet201
         model = DenseNet201(num_classes)
@@ -118,7 +123,7 @@ def Get_model(net, num_classes = 1000, verbose = False):
         model = Vit_huge_patch14_224(num_classes)
     elif net == 'Swin-B':
         from nets.Swin import swin_base_patch4_window7_224
-        model = swin_base_patch4_window7_224
+        model = swin_base_patch4_window7_224(num_classes)
     elif net == 'Swin-L':
         from nets.Swin import swin_large_patch4_window7_224
         model = swin_large_patch4_window7_224(num_classes)
