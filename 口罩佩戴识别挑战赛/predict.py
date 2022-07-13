@@ -89,6 +89,44 @@ class Prediction():
         return {"label": pred_label, 'class':self.classes[pred_label],"label_prob":prob[0]}
 
 
+
+def ensemble_vote(test, pred):
+    # 一个一个的载入模型进行测试，测试成功后对投票结果进行整合
+    import glob
+    paths = glob.glob(r'./checkpoint/best*')
+    NET = []
+    test_vote = test.copy()
+    total = len(test)
+    for i in range(num_classes):
+        test_vote['label_%d'%i] = 0
+    for path in paths:
+        net = path.split('_')[1]
+        # 判断载入的模型是否符合标准，如果达到了标准就进行测试
+        flag = pred.load_model(net, threshold= threshold)
+        if flag:
+            NET.append(net)
+            print("==> #--------------------------------------#")
+            print("==> # 筛选{}模型进入集成模型".format(net))
+            print("==> #--------------------------------------#")
+            with tqdm(total=total,desc=f'{net} Predict Pictures {total}',mininterval=0.3) as pbar:
+                for i,img_path in enumerate(test['path']):
+                    pre = pred.predict(image_path=root + img_path)
+                    test_vote.iloc[i,2 + pre['label']] += 1
+                    pbar.update(1)
+            print(test_vote.head(5))
+        else:
+            print("==> #--------------------------------------#")
+            print("==> # 【未筛选{}模型进入集成模型】".format(net))
+            print("==> #--------------------------------------#")
+    # 对投票结果进行处理，取出最佳的投票结果
+    test_vote = np.array(test_vote.iloc[:,2:])
+    with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
+        for i,img_path in enumerate(test['path']):
+            c = np.argmax(test_vote[i])
+            test.iloc[i,1] = pred.classes[c]
+            pbar.update(1)      
+    print("集成模型一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
+
 def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshold = 98.5):
     import pandas as pd
     test = pd.read_csv('./data/sample_submit.csv')
@@ -102,94 +140,74 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshol
         paths = glob.glob(r'./checkpoint/best*')
         NET = []
         if type == 'vote':
-            test_vote = test.copy()
-            for i in range(num_classes):
-                test_vote['label_%d'%i] = 0
-            for path in paths:
-                net = path.split('_')[1]
-                # 判断载入的模型是否符合标准，如果达到了标准就进行测试
-                flag = pred.load_model(net, threshold= threshold)
-                if flag:
-                    NET.append(net)
-                    print("==> #--------------------------------------#")
-                    print("==> # 筛选{}模型进入集成模型".format(net))
-                    print("==> #--------------------------------------#")
-                    with tqdm(total=total,desc=f'{net} Predict Pictures {total}',mininterval=0.3) as pbar:
-                        for i,img_path in enumerate(test['path']):
-                            pre = pred.predict(image_path=root + img_path)
-                            test_vote.iloc[i,2 + pre['label']] += 1
-                            pbar.update(1)
-                    print(test_vote.head(5))
-                else:
-                    print("==> #--------------------------------------#")
-                    print("==> # 【未筛选{}模型进入集成模型】".format(net))
-                    print("==> #--------------------------------------#")
-            # 对投票结果进行处理，取出最佳的投票结果
-            test_vote = np.array(test_vote.iloc[:,2:])
-            with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
-                for i,img_path in enumerate(test['path']):
-                    c = np.argmax(test_vote[i])
-                    test.iloc[i,1] = pred.classes[c]
-                    pbar.update(1)      
+            ensemble_vote(test, pred)
         elif type == 'mean':
-            count = 0
-            test_mean = test.copy()
-            for i in range(num_classes):
-                test_mean['label_prob%d'%i] = 0
-            for path in paths:
-                net = path.split('_')[1]
-                # 判断载入的模型是否符合标准，如果达到了标准就进行测试
-                flag = pred.load_model(net, threshold= threshold)
-                if flag:
-                    NET.append(net)
-                    print("==> #--------------------------------------#")
-                    print("==> # 筛选{}模型进入集成模型".format(net))
-                    print("==> #--------------------------------------#")
-                    with tqdm(total=total,desc=f'==> {net} Predict Pictures {total}',mininterval=0.3) as pbar:
-                        for i,img_path in enumerate(test['path']):
-                            pre = pred.predict(image_path=root + img_path)
-                            for j,prob in enumerate(pre['label_prob']):
-                                test_mean.iloc[i,2 + j] += prob
-                            pbar.update(1)
-                    count += 1
-                    test_mean2 = test_mean.copy()
-                    test_mean2.iloc[:,2:] /= count
-                    print(test_mean2.head(5))           
-                else:
-                    print("==> #--------------------------------------#")
-                    print("==> # 【未筛选{}模型进入集成模型】".format(net))
-                    print("==> #--------------------------------------#")
-            # 对均值结果进行处理，取出最优结果
-            test_mean = np.array(test_mean.iloc[:,2:]) / count
+            mean_path = 'test_mean_{}.csv'.format(threshold)
+            if os.path.exists(mean_path):
+                test_mean = pd.read_csv(mean_path)
+                print("已经筛选过，导入数据即可，不需要重新测试")
+            else:  
+                count = 0
+                test_mean = test.copy()
+                for i in range(num_classes):
+                    test_mean['label_prob%d'%i] = 0
+                for path in paths:
+                    net = path.split('_')[1]
+                    # 判断载入的模型是否符合标准，如果达到了标准就进行测试
+                    flag = pred.load_model(net, threshold= threshold)
+                    if flag:
+                        NET.append(net)
+                        print("==> #--------------------------------------#")
+                        print("==> # 筛选{}模型进入集成模型".format(net))
+                        print("==> #--------------------------------------#")
+                        with tqdm(total=total,desc=f'==> {net} Predict Pictures {total}',mininterval=0.3) as pbar:
+                            for i,img_path in enumerate(test['path']):
+                                pre = pred.predict(image_path=root + img_path)
+                                for j,prob in enumerate(pre['label_prob']):
+                                    test_mean.iloc[i,2 + j] += prob
+                                pbar.update(1)
+                        count += 1
+                        test_mean2 = test_mean.copy()
+                        test_mean2.iloc[:,2:] /= count
+                        print(test_mean2.head(5))           
+                    else:
+                        print("==> #--------------------------------------#")
+                        print("==> # 【未筛选{}模型进入集成模型】".format(net))
+                        print("==> #--------------------------------------#")
+                # 对均值结果进行处理，取出最优结果
+                test_mean.iloc[:,2:] /= count
+                test_mean.to_csv(mean_path, index=False)
+                print("集成模型一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
+            test_mean = np.array(test_mean.iloc[:,2:])
             # print(test_mean)
             with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
                 for i,img_path in enumerate(test['path']):
                     # 第一次后处理未涉及的难样本 index
                     # 第一次后处理 - 将预测概率值大于 threshold 的样本作为分类的类别
-                    threshold = 0.6
+                    threshold_prob = 0.6
                     flag = False
                     for index,prob in enumerate(test_mean[i]):
-                        if prob > threshold:
+                        if prob > threshold_prob:
                             res = index
                             flag = True
                             break
                     # 进行第二次处理
                     if not flag:
                         max_indexs = np.argsort(test_mean[i])[-2:] # 取出最大的两个index
-                        if np.fabs(test_mean[i][max_indexs[0]] - test_mean[i][max_indexs[1]]) > 0.2:
-                            res = max_indexs[1]
+                        if np.fabs(test_mean[i][max_indexs[0]] - test_mean[i][max_indexs[1]]) > 0.15:
+                            res = np.argmax(test_mean[i])
                         else:
                             # ['mask_weared_incorrect', 'with_mask', 'without_mask']
                             ans = np.sum(max_indexs)
                             if ans == 3 or ans == 2: # 1 + 2 or 0 + 2
                                 # 导入分类模型，对是否带口罩进行细分类 ['with_mask', 'without_mask'] 
-                                pred.load_model('Swin-B', threshold= 0, num_classes = 2, checkpoint_path= 'checkpoint2', verbose = False)
+                                pred.load_model('ResNet50', threshold= 0, num_classes = 2, checkpoint_path= 'checkpoint2', verbose = False)
                                 pre = pred.predict(image_path=root + img_path)
                                 # 如果最大两个类别分别是 'with_mask', 'without_mask'，那么只需要在基础上加1即可
-                                if ans == 3:
+                                if ans == 3: # 1 + 2
                                     res = pre['label'] + 1
-                                # 如果最大两个类别分别是 'mask_weared_incorrect', 'with_mask'，那么需要判断
-                                elif ans == 2:
+                                elif ans == 2: # 0 + 2 'mask_weared_incorrect' + 'with_mask'
+                                    # 如果最大两个类别分别是 'mask_weared_incorrect', 'with_mask'，那么需要判断
                                     # 若细分类模型判断为1，即是'without_mask'
                                     if pre['label'] == 1:
                                         res = 2
@@ -198,15 +216,22 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshol
                                         res = 0
                             elif ans == 1: # 0 + 1 ['mask_weared_incorrect', 'with_mask']
                                 # 导入分类模型，对是否正确口罩的细分类
-                                pred.load_model('Swin-B', threshold= 0, num_classes= 2, checkpoint_path= 'checkpoint3', verbose = False)
+                                pred.load_model('ResNet50', threshold= 0, num_classes= 2, checkpoint_path= 'checkpoint3', verbose = False)
                                 pre = pred.predict(image_path=root + img_path)
-                                res = pre['label'] # 不需要进行操作，直接即可
+                                if pre['label_prob'][1] > 0.7:
+                                    res =  1
+                                else:
+                                    res = 0
+
                             else:
                                 res = np.argmax(test_mean[i])
-                            print(img_path, test_mean[i], pred.classes[res])
+                            print(img_path, test_mean[i], pred.classes[res],pre['label_prob'])
+                            import shutil
+                            if not os.path.exists('test'):
+                                os.mkdir('test')
+                            shutil.copyfile('data//test//' + img_path, './test//' + img_path)
                     test.iloc[i,1] = pred.classes[res]
                     pbar.update(1)
-        print("集成模型一共有个 {} 模型， 分别是 {}".format(len(NET), " ".join(NET)))
     else:
         pred.load_model(net)
         with tqdm(total=total,desc=f'==> Predict Pictures {total}',mininterval=0.3) as pbar:

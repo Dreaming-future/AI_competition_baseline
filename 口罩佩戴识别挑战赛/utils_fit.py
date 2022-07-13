@@ -15,7 +15,7 @@ def freeze_net(net, net_name, epoch, freeze_epoch, Dp):
                 else:
                     for param in net.head.parameters():
                         param.requires_grad = True
-            elif 'ResNeXt' in net_name:
+            elif 'Res' in net_name:
                 if Dp:
                     for param in net.module.fc.parameters():
                         param.requires_grad = True
