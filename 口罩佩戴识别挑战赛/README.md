@@ -227,7 +227,7 @@ CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net DenseNet161 --num-workers
 rm -rf data2
 ```
 
-**分类mask_weared_incorrect和with_mask **  类别 mask_weared_incorrect with_mask 口罩正确佩戴细分类
+**分类mask_weared_incorrect和with_mask**  类别 mask_weared_incorrect with_mask 口罩正确佩戴细分类
 
 ```bash
 cp -rf data data3
@@ -292,6 +292,8 @@ optional arguments:
 CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net NET名字 --num-workers 8 --epochs 50 -fe 50
 ```
 
+</details>
+
 <details open>
 <summary>测试方式</summary>
 
@@ -318,7 +320,9 @@ optional arguments:
 CUDA_VISIBLE_DEVICES=0 python predict.py
 ```
 
-# 七、提交结果
+</details>
+
+## 七、提交结果
 
 2022.7.7，排行榜并列第一，达到准确率有0.98095的水准
 
