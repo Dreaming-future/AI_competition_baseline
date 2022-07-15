@@ -18,6 +18,22 @@ def Efficientv2_S(num_classes = 1000, pretrained = True):
     model = timm.create_model('tf_efficientnetv2_s_in21ft1k',pretrained=pretrained,num_classes = num_classes)
     return model
 
+
+def Efficientv2_T(num_classes = 1000, pretrained = True):
+    model = timm.create_model('efficientnetv2_rw_t',pretrained=pretrained,num_classes = num_classes)
+    return model
+def Efficientv2_b0(num_classes = 1000, pretrained = True):
+    model = timm.create_model('tf_efficientnetv2_b0',pretrained=pretrained,num_classes = num_classes)
+    return model
+
+def Efficientv2_b1(num_classes = 1000, pretrained = True):
+    model = timm.create_model('tf_efficientnetv2_b1',pretrained=pretrained,num_classes = num_classes)
+    return model
+
+def Efficientv2_b2(num_classes = 1000, pretrained = True):
+    model = timm.create_model('tf_efficientnetv2_b2',pretrained=pretrained,num_classes = num_classes)
+    return model
+
     
 # def test():   
 #     model = EfficientNet_b4()

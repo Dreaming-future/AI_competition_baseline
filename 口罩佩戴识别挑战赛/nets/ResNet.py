@@ -158,6 +158,24 @@ def ResNet50(verbose=False):
 import torchvision.models as models
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+def ResNet34(classes=1000):
+    resnet34 = models.resnet34(pretrained=True)
+
+    inchannel = resnet34.fc.in_features
+    resnet34.fc = nn.Linear(inchannel, classes)
+
+    return resnet34 
+
+def ResNet18(classes=1000):
+    resnet18 = models.resnet18(pretrained=True)
+    resnet18.avgpool = nn.AdaptiveAvgPool2d(1)
+    resnet18 .fc = nn.Linear(512, classes)
+
+    # inchannel = resnet18 .fc.in_features
+    # resnet18 .fc = nn.Linear(inchannel, classes)
+
+    return resnet18 
+
 def ResNet50(classes=1000):
     resnet50 = models.resnet50(pretrained=True)
       

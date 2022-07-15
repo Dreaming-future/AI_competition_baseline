@@ -39,4 +39,4 @@ def EfficientNet_b8(num_classes = 1000, pretrained = True):
 def test():   
     model = EfficientNet_b4()
     summary(model,(1,3,224,224))
-test()
+# test()
