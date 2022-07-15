@@ -1,6 +1,5 @@
 import torch
 from torch.utils.data.dataset import Dataset
-import time
 import numpy as np
 import cv2
 import pandas as pd
@@ -71,21 +70,24 @@ def load_model(net = "ResNet18", verbose = True, checkpoint_path = 'checkpoint',
     model.load_state_dict(remove_prefix(checkpoint_best['net'], 'module.'))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
-    return model
+    return model,best_acc
 
 pred = None
 # 重复预测多次test_loader
 paths = glob.glob(r'./checkpoint/best*')
 for path in paths:
     net = path.split('_')[1]
-    model = load_model(net)
-    for _ in range(5):
-        if pred is None:
-            pred = predict(test_loader, model)
-        else:
-            pred += predict(test_loader, model)
-    print("==> {} 模型预测完毕".format(net))
-
+    print('==> 使用 {} 模型'.format(net))
+    model,bc = load_model(net)
+    if bc > 93:
+        for _ in range(5):
+            if pred is None:
+                pred = predict(test_loader, model)
+            else:
+                pred += predict(test_loader, model)
+        print("==> {} 模型预测完毕".format(net))
+    else:
+        print("==> {} 模型未筛选预测".format(net))
 print("==> 正在生成文件")
 submit = pd.DataFrame(
     {
@@ -94,4 +96,5 @@ submit = pd.DataFrame(
 })
 
 from datetime import datetime
-submit.to_csv('submit_{}_{}.csv'.format(net,datetime.now().strftime("%m-%d-%H-%M-%S")), index=None)
+submit.to_csv('submit_ensemble_{}.csv'.format(datetime.now().strftime("%m-%d-%H-%M-%S")), index=None)
+print("==> 文件生成完毕")
