@@ -33,10 +33,6 @@ class XunFeiDataset(Dataset):
     def __len__(self):
         return len(self.img_path)
 
-image_mean = [0.4940, 0.4187, 0.3855]
-image_std = [0.2048, 0.1941, 0.1932]
-
-
 import albumentations as A
 # Data
 def get_training_dataloader(batch_size = 64, num_workers = 4, shuffle = True, resize = 224, root = './data//'):
@@ -45,8 +41,11 @@ def get_training_dataloader(batch_size = 64, num_workers = 4, shuffle = True, re
             # A.Resize(512, 512),
             A.RandomCrop(450, 750),
             # A.HorizontalFlip(p=0.5),
-            A.RandomContrast(p=0.5),
-            A.RandomBrightnessContrast(p=0.5),
+            # A.RandomContrast(p=0.5),
+            A.CoarseDropout(p=0.5),
+            A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.05, rotate_limit=0, p=0.5),
+            # A.HueSaturationValue(p=0.5),
+            # A.RandomBrightnessContrast(p=0.5),
         ])
     
     trainset = XunFeiDataset(train_df['path'].values[:-200], train_df['label'].values[:-200], transform= transform_train)
