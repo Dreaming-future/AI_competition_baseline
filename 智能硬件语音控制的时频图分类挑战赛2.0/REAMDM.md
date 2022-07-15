@@ -38,9 +38,9 @@
 
 3、文件详细说明：
 
-\1) 编码为UTF-8
+1) 编码为UTF-8
 
-\2) 提交格式见提交示例
+2) 提交格式见提交示例
 
 ## 五、赛程规则
 
@@ -77,7 +77,7 @@
 
 ## 七、尝试Tricks和思路
 
-- [x] 尝试多用数据增强
+- [ ] 尝试多用数据增强
 
 - [x] 尝试用现有的权重进行迁移学习
 
@@ -100,13 +100,19 @@
 ```bash
 transform_train = A.Compose([
         A.RandomCrop(450, 750),
-        # A.HorizontalFlip(p=0.5),
-        # A.RandomContrast(p=0.5),
-        # A.RandomBrightnessContrast(p=0.5),
     ])
 ```
 
-batchsize 都为5，在预训练的模型下进行训练，这样在含有足够多的知识能得到更好的结果。
+后续增加数据增强，我发现从结果上来看，由于我们的图片中亮度变化比较明显，如果对亮度进行变化的话，我们的数据增强几乎是没什么效果的，个人感觉对比度也是，所以增加的数据增强主要是对图像的平移，或者掩盖等等。如果结果不错的话，再考虑用亮度和对比度的增强进行测试
+
+```bash
+transform_train = A.Compose([
+            A.RandomCrop(450, 750),
+            A.CoarseDropout(p=0.5),
+            A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.05, rotate_limit=0, p=0.5),
+            # A.RandomBrightnessContrast(p=0.5),
+        ])
+```
 
 **ResNet18**
 
@@ -116,39 +122,27 @@ batchsize 都为5，在预训练的模型下进行训练，这样在含有足够
 CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net ResNet18 --epochs 50 -bs 5 -lr 0.001
 ```
 
-**ConvNeXt-T**
-
-换成ConvNeXt得到了大概90%的准确率，没有ResNet18的结果好
+**训练方式**
 
 ```bash
-CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net ConvNeXt-T --epochs 50 -bs 5 -lr 0.001 -fe 10
-```
-
-**EfficientNetv2-S**
-
-也利用了EfficientNetv2-S模型进行训练，尝试是否能得到好的结果
-
-```bash
-CUDA_VISIBLE_DEVICES=3 python train.py -f --cuda --net EfficientNetv2-S --epochs 50 -bs 5 -lr 0.001 -fe 10
-```
-
- **EfficientNet-b0 **
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net EfficientNet-b0 --epochs 50 -bs 5 -lr 0.001 -fe 5
+CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net Model --epochs 50 -bs 5 -lr 0.001 -fe 5
 ```
 
 结果会发现，我们用小模型的训练往往能得到不错的结果，特别是EfficientNetv2系列的模型，在验证集中能得到比较高的准确率
 
-| 使用模型  | 迭代次数 | 训练参数 | 训练集ACC | 验证集ACC |
-| :-------: | :------: | :------: | :-------: | :-------: |
-| ResNet18  |          |          |           |           |
-| Efficient |          |          |           |           |
-|           |          |          |           |           |
+这之中都是利用预训练模型进程测试的，因为含有一定量知识的模型才能得到更好的结果，并且在下列模型中，都先冻结训练了5个迭代
+
+|     使用模型      |  迭代次数   |             训练参数             | 训练集ACC | 验证集ACC |
+| :---------------: | :---------: | :------------------------------: | :-------: | :-------: |
+|     ResNet18      | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
+| EfficientNetv2-S  | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
+| EfficientNetv2-b0 | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
 
 
 
 实际上现有模型都是小模型进行训练，之后也可以尝试利用大模型查看能否得到比较好的结果
+
+
 
 ## 九、提交结果
 
