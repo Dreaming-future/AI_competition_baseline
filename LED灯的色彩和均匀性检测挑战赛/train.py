@@ -17,20 +17,21 @@ if __name__ == '__main__':
     parser.add_argument('--lr','-lr', default=0.004, type=float, help='learning rate')
     parser.add_argument('--num-classes','-nc', default=2, type=int, help='learning rate')
     parser.add_argument('--cuda', '-gpu', action='store_true', default=False, help =' use GPU?')
-    parser.add_argument('--batch-size','-bs', default=64, type=int, help = "Batch Size for Training")
+    parser.add_argument('--batch-size','-bs', default=32, type=int, help = "Batch Size for Training")
     parser.add_argument('--num-workers', '-nw', default=8, type=int, help = 'num-workers')
     parser.add_argument('--net', '--model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
-                                                       'ResNet34','ResNet50','ResNet101',   
+                                                       'ResNet18','ResNet34','ResNet50','ResNet101',   
                                                        'DenseNet','DenseNet121','DenseNet161','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
                                                        'ResNeXt50-32x4d','ResNeXt101-32x8d',
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
-                                                       'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
+                                                       'Efficientv2-b0','Efficientv2-b1','Efficientv2-b2','Efficientv2-b3',
+                                                       'Efficientv2-T','Efficientv2-S','Efficientv2-M','Efficientv2-L','Efficientv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'Swin-B','Swin-L',
+                                                       'Swin-T','Swin-S','Swin-B','Swin-L',
                                                        'ViT-B','ViT-L','ViT-H',
                                                        'CaiT-s24','CaiT-xxs24','CaiT-xxs36',
-                                                       'DeiT-B','DeiT-T','DeiT-S',
+                                                       'DeiT-T','DeiT-S','DeiT-B',
                                                        'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1'], default='MobileNetv2', help='net type')
     parser.add_argument('--epochs', '-e', type = int, default=20, help = 'Epochs')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint 断点续传')
@@ -134,6 +135,6 @@ if __name__ == '__main__':
 
     for epoch in range(start_epoch, epochs):
         freeze_net(net, Net , epoch, freeze_epoch, Dp)
-        fit_one_epoch(net, epoch, epochs, train_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
-        fit_one_epoch_val(net, epoch, epochs, val_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
+        fit_one_epoch(net, epoch, freeze_epoch, epochs, train_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
+        fit_one_epoch_val(net, epoch, freeze_epoch, epochs, val_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
     torch.cuda.empty_cache()
