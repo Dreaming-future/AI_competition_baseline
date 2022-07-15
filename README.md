@@ -11,3 +11,9 @@
 ## 口罩佩戴识别挑战赛
 
 网址：http://challenge.xfyun.cn/topic/info?type=wear-mask&option=ssgy
+
+
+
+## 智能硬件语音控制的时频图分类挑战赛2.0
+
+网址：http://challenge.xfyun.cn/topic/info?type=time-frequency-2022&option=stsj
