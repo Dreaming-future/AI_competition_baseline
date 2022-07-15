@@ -46,7 +46,7 @@
 
 本赛题实行一轮赛制
 
-#### 赛程周期 7月1日-8月1日
+### 赛程周期 7月1日-8月1日
 
 1、7月1日10：00发布相关数据集（即开启比赛榜单）
 
@@ -89,7 +89,7 @@
 
   > 450x750其实是一个很奇妙的数据，在图片中，大概来说是500x800,450x750讲边缘数据给剔除之后，也就是边缘的噪声得到最后的结果，这样的方法是比较有可信度的
 
-- [ ] 尝试增大batchsize进行运行得到结果
+- [ ] 尝试增大batchsize进行运行得到结果，从5->8
 
 - [ ] 尝试利用大模型进行训练
 
@@ -105,11 +105,13 @@ transform_train = A.Compose([
 
 后续增加数据增强，我发现从结果上来看，由于我们的图片中亮度变化比较明显，如果对亮度进行变化的话，我们的数据增强几乎是没什么效果的，个人感觉对比度也是，所以增加的数据增强主要是对图像的平移，或者掩盖等等。如果结果不错的话，再考虑用亮度和对比度的增强进行测试
 
+增加了A.CoarseDropout(p=0.5)以后，结果提高了1%左右
+
 ```bash
 transform_train = A.Compose([
             A.RandomCrop(450, 750),
             A.CoarseDropout(p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.05, rotate_limit=0, p=0.5),
+            # A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.05, rotate_limit=0, p=0.5),
             # A.RandomBrightnessContrast(p=0.5),
         ])
 ```
@@ -132,11 +134,21 @@ CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net Model --epochs 50 -bs 5 -
 
 这之中都是利用预训练模型进程测试的，因为含有一定量知识的模型才能得到更好的结果，并且在下列模型中，都先冻结训练了5个迭代
 
+除此之外，添加了早停策略，防止过拟合
+
+
+
+这里展示的是模型的最优结果
+
 |     使用模型      |  迭代次数   |             训练参数             | 训练集ACC | 验证集ACC |
 | :---------------: | :---------: | :------------------------------: | :-------: | :-------: |
-|     ResNet18      | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
-| EfficientNetv2-S  | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
-| EfficientNetv2-b0 | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
+|     ResNet18      | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |   99.90   |   97.12   |
+|    ConvNeXt-T     | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |           |           |
+| EfficientNetv2-T  | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |   99.90   |   91.12   |
+| EfficientNetv2-b0 | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |   99.90   |   96.63   |
+| EfficientNetv2-b1 | epochs = 50 | AdamW,lr = 0.0005,batch-size = 8 |   99.90   |   95.67   |
+
+
 
 
 
@@ -150,8 +162,14 @@ CUDA_VISIBLE_DEVICES=0 python train.py -f --cuda --net Model --epochs 50 -bs 5 -
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/7cdc233e403d4cdf86b503a504a39bfa.png#pic_center)
 
+2022.7.15，目前排名第5，得分0.94377，这一次只加了一个数据增强就得到了不错的结果
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/f572b323e840455ea798d7c0a1dc1429.png#pic_center)
+
 |  ID  |   状态   |  评分   |                 提交文件名                 |                           提交备注                           |      提交者       |      提交时间       |
 | :--: | :------: | :-----: | :----------------------------------------: | :----------------------------------------------------------: | :---------------: | :-----------------: |
-|  1   | 返回分数 | 0.93121 | submit_EfficientNetv2-S_07-15-01-03-09.csv | 利用三个模型ConvNeXt-T,ResNet18,EfficientNetv2-S，无数据增强的结 | 擅长射手的pikachu | 2022-07-15 01:04:40 |
-|  2   | 返回分数 | 0.90679 |             sub_convnext-T.csv             | 利用ConvNeXt-T模型，在改进的基础上进行训练，无数据增强的结果 | 擅长射手的pikachu | 2022-07-14 22:20:30 |
-|  3   | 返回分数 | 0.9145  |                  sub.csv                   | 利用baseline中的ResNet18模型，在改进的基础上进行训练，最后测试结果 | 擅长射手的pikachu | 2022-07-14 16:54:44 |
+|  1   | 返回分数 | 0.94377 |     submit_ensemble_07-15-16-56-00.csv     | 集成多个Efficientv2系列的模型，加上ResNet18小模型，加上随机掩盖数据增强的结果 | 擅长射手的pikachu | 2022-07-15 17:14:56 |
+|  2   | 返回分数 | 0.93121 |     submit_ensemble_07-15-01-03-09.csv     | 集成多个Efficientv2系列的模型，加上ResNet18小模型，无数据增强的结果 | 擅长射手的pikachu | 2022-07-15 09:53:24 |
+|  3   | 返回分数 | 0.93121 | submit_EfficientNetv2-S_07-15-01-03-09.csv | 利用三个模型ConvNeXt-T,ResNet18,EfficientNetv2-S，无数据增强的结 | 擅长射手的pikachu | 2022-07-15 01:04:40 |
+|  4   | 返回分数 | 0.90679 |             sub_convnext-T.csv             | 利用ConvNeXt-T模型，在改进的基础上进行训练，无数据增强的结果 | 擅长射手的pikachu | 2022-07-14 22:20:30 |
+|  5   | 返回分数 | 0.9145  |                  sub.csv                   | 利用baseline中的ResNet18模型，在改进的基础上进行训练，最后测试结果 | 擅长射手的pikachu | 2022-07-14 16:54:44 |
