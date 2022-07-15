@@ -39,7 +39,7 @@ def freeze_net(net, net_name, epoch, freeze_epoch, Dp):
             param.requires_grad = True
 
 
-def fit_one_epoch(net, epoch, epochs, train_loader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc, checkpoint = './checkpoint'):
+def fit_one_epoch(net, epoch, freeze_epoch, epochs, train_loader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc, checkpoint = './checkpoint'):
     epoch_step = len(train_loader)
     if epoch_step == 0:
         raise ValueError("数据集过小，无法进行训练，请扩充数据集，或者减小batchsize")
@@ -141,7 +141,7 @@ def fit_one_epoch(net, epoch, epochs, train_loader, optimizer, loss_fn, schedule
     #     exit()
 
 
-def fit_one_epoch_val(net, epoch, epochs, val_loader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc, checkpoint = './checkpoint'):
+def fit_one_epoch_val(net, epoch, freeze_epoch, epochs, val_loader, optimizer, loss_fn, scheduler, early_stopping, cuda, fp16, scaler, save_net, best_acc, checkpoint = './checkpoint'):
     epoch_step_val = len(val_loader)
     if epoch_step_val == 0:
             raise ValueError("数据集过小，无法进行训练，请扩充数据集，或者减小batchsize")
@@ -193,7 +193,7 @@ def fit_one_epoch_val(net, epoch, epochs, val_loader, optimizer, loss_fn, schedu
         best_acc = val_acc
         
     print('Finish Val')
-    if early_stopping != None:
+    if freeze_epoch <= epoch:
         early_stopping(val_loss, net)
         # 若满足 early stopping 要求
         if early_stopping.early_stop:
