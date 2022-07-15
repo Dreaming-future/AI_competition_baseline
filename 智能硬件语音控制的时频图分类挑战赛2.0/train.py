@@ -25,7 +25,8 @@ if __name__ == '__main__':
                                                        'MobileNetv1','MobileNetv2',
                                                        'ResNeXt50-32x4d','ResNeXt101-32x8d',
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
-                                                       'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
+                                                       'Efficientv2-b0','Efficientv2-b1','Efficientv2-b2','Efficientv2-b3',
+                                                       'Efficientv2-T','Efficientv2-S','Efficientv2-M','Efficientv2-L','Efficientv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
                                                        'Swin-T','Swin-S','Swin-B','Swin-L',
                                                        'ViT-B','ViT-L','ViT-H',
@@ -51,7 +52,10 @@ if __name__ == '__main__':
 
     num_classes = args.num_classes
     freeze = args.f # 是否冻结训练
-    freeze_epoch = args.fe
+    if freeze:
+        freeze_epoch = args.fe
+    else:
+        freeze_epoch = 0
     epochs = args.epochs
     fp16 = args.fp16
     resume = args.resume
@@ -135,6 +139,6 @@ if __name__ == '__main__':
 
     for epoch in range(start_epoch, epochs):
         freeze_net(net, Net , epoch, freeze_epoch, Dp)
-        fit_one_epoch(net, epoch, epochs, train_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
-        fit_one_epoch_val(net, epoch, epochs, val_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
+        fit_one_epoch(net, epoch, freeze_epoch, epochs, train_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
+        fit_one_epoch_val(net, epoch, freeze_epoch, epochs, val_loader, optimizer, loss_fn, scheduler, early_stopping, Cuda, fp16, scaler, Net, best_acc, checkpoint = checkpoint_model)
     torch.cuda.empty_cache()
