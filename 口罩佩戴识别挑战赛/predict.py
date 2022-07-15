@@ -272,8 +272,11 @@ if __name__ == '__main__':
     type = args.type
     threshold = args.threshold
     from datetime import datetime
-    if type == 'mean':
-        csv_path = 'submit_{}_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"),threshold)
+    if net == 'ensemble':
+        if type == 'mean':
+            csv_path = 'submit_{}_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"),threshold)
+        else:
+            csv_path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"))
     else:
-        csv_path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"))
+        csv_path = 'submit_{}_{}.csv'.format(net,datetime.now().strftime("%m-%d-%H-%M-%S"))
     save_csv(csv_path = csv_path,net = net, type = type, threshold = threshold)
