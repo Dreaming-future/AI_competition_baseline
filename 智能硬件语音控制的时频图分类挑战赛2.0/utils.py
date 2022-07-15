@@ -36,7 +36,7 @@ def Get_model(net, num_classes = 1000, verbose = False):
         model = AlexNet(num_classes)
     elif net == 'DenseNet':
         from nets.DenseNet import densenet_cifar
-        net = densenet_cifar()
+        model = densenet_cifar()
     elif net == 'DenseNet121':
         from nets.DenseNet import DenseNet121
         model = DenseNet121(num_classes)
@@ -51,7 +51,7 @@ def Get_model(net, num_classes = 1000, verbose = False):
         model = DenseNet201(num_classes)
     elif net == 'MobileNetv1':
         from nets.MobileNetv1 import MobileNet
-        net = MobileNet(num_classes)
+        model = MobileNet(num_classes)
     elif net == 'MobileNetv2':
         from nets.MobileNetv2 import MobileNetV2
         model = MobileNetV2(num_classes)
@@ -88,16 +88,31 @@ def Get_model(net, num_classes = 1000, verbose = False):
     elif net == 'EfficientNet-b8':
         from nets.EfficientNet import EfficientNet_b8
         model = EfficientNet_b8(num_classes)
-    elif net == 'EfficientNetv2-S':
+    elif net == 'Efficientv2-b0':
+        from nets.EfficientNetv2 import Efficientv2_b0
+        model = Efficientv2_b0(num_classes)
+    elif net == 'Efficientv2-b1':
+        from nets.EfficientNetv2 import Efficientv2_b1
+        model = Efficientv2_b1(num_classes)
+    elif net == 'Efficientv2-b2':
+        from nets.EfficientNetv2 import Efficientv2_b2
+        model = Efficientv2_b2(num_classes)
+    elif net == 'Efficientv2-b3':
+        from nets.EfficientNetv2 import Efficientv2_b3
+        model = Efficientv2_b3(num_classes)
+    elif net == 'Efficientv2-T':
+        from nets.EfficientNetv2 import Efficientv2_T
+        model = Efficientv2_T(num_classes)
+    elif net == 'Efficientv2-S':
         from nets.EfficientNetv2 import Efficientv2_S
         model = Efficientv2_S(num_classes)
-    elif net == 'EfficientNetv2-M':
+    elif net == 'Efficientv2-M':
         from nets.EfficientNetv2 import Efficientv2_M
-        net = Efficientv2_M(num_classes)
-    elif net == 'EfficientNetv2-L':
+        model = Efficientv2_M(num_classes)
+    elif net == 'Efficientv2-L':
         from nets.EfficientNetv2 import Efficientv2_L
         model = Efficientv2_L(num_classes)
-    elif net == 'EfficientNetv2-XL':
+    elif net == 'Efficientv2-XL':
         from nets.EfficientNetv2 import Efficientv2_XL
         model = Efficientv2_XL(num_classes)
     elif net == 'ConvNeXt-T':

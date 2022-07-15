@@ -192,7 +192,7 @@ def fit_one_epoch_val(net, epoch, epochs, val_loader, optimizer, loss_fn, schedu
         torch.save(state, '{}/best_{}_ckpt.pth'.format(checkpoint, save_net))
         best_acc = val_acc
         
-    print('Finish val')
+    print('Finish Val')
     if early_stopping != None:
         early_stopping(val_loss, net)
         # 若满足 early stopping 要求
