@@ -88,8 +88,8 @@ https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score
 - [x] EfficientNetv1、v2
 - [x] 集成模型的投票方法
 - [x] 集成模型的均值方法
-- [ ] 双分类模型，先分with_mask 和 without_mask，再分 mask_weared_incorrect 和 with_mask（即是mask_weared_correct）
-- [ ] 增加了多个SOTA的模型进行，如Cait，Deit，Bit等
+- [x] 双分类模型，先分with_mask 和 without_mask，再分 mask_weared_incorrect 和 with_mask（即是mask_weared_correct）
+- [x] 增加了多个SOTA的模型进行，如Cait，Deit，Bit等
 
 ### 尝试Tricks
 
