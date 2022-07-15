@@ -17,3 +17,9 @@
 ## 智能硬件语音控制的时频图分类挑战赛2.0
 
 网址：http://challenge.xfyun.cn/topic/info?type=time-frequency-2022&option=stsj
+
+
+
+## LED灯的色彩和均匀性检测挑战赛
+
+网址：http://challenge.xfyun.cn/topic/info?type=color-and-uniformity
