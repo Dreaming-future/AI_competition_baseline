@@ -15,19 +15,20 @@ class Prediction():
         image_std = [0.2048, 0.1941, 0.1932]
         # 不进行数据增强的transforms
         self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
+            transforms.Resize((384,288)),
             transforms.ToTensor(),
             transforms.Normalize(image_mean, image_std)
         ])
         
         self.use_gpu = torch.cuda.is_available()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.num_classes = 3
-        self.classes = ['mask_weared_incorrect', 'with_mask', 'without_mask']
+        self.num_classes = 2
+        # self.classes = ['mask_weared_incorrect', 'with_mask', 'without_mask']
+        self.classes = [0, 1]
         self.Ensemble = False
         self.nets = [] # 集成模型的列表
 
-    def load_model(self, net = 'ConvNeXt-B', type = 'best', num_classes = 3, threshold = 98.5, checkpoint_path = 'checkpoint', verbose = True):
+    def load_model(self, net = 'ConvNeXt-B', type = 'best', num_classes = 2, threshold = 98.5, checkpoint_path = 'checkpoint', verbose = True):
         '''
         模型初始化，必须在此方法中加载模型
         '''
@@ -109,7 +110,7 @@ def ensemble_vote(test, pred):
             print("==> # 筛选{}模型进入集成模型".format(net))
             print("==> #--------------------------------------#")
             with tqdm(total=total,desc=f'{net} Predict Pictures {total}',mininterval=0.3) as pbar:
-                for i,img_path in enumerate(test['path']):
+                for i,img_path in enumerate(test['image']):
                     pre = pred.predict(image_path=root + img_path)
                     test_vote.iloc[i,2 + pre['label']] += 1
                     pbar.update(1)
@@ -121,7 +122,7 @@ def ensemble_vote(test, pred):
     # 对投票结果进行处理，取出最佳的投票结果
     test_vote = np.array(test_vote.iloc[:,2:])
     with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
-        for i,img_path in enumerate(test['path']):
+        for i,img_path in enumerate(test['image']):
             c = np.argmax(test_vote[i])
             test.iloc[i,1] = pred.classes[c]
             pbar.update(1)      
@@ -161,7 +162,7 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshol
                         print("==> # 筛选{}模型进入集成模型".format(net))
                         print("==> #--------------------------------------#")
                         with tqdm(total=total,desc=f'==> {net} Predict Pictures {total}',mininterval=0.3) as pbar:
-                            for i,img_path in enumerate(test['path']):
+                            for i,img_path in enumerate(test['image']):
                                 pre = pred.predict(image_path=root + img_path)
                                 for j,prob in enumerate(pre['label_prob']):
                                     test_mean.iloc[i,2 + j] += prob
@@ -181,7 +182,7 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshol
             test_mean = np.array(test_mean.iloc[:,2:])
             # print(test_mean)
             with tqdm(total=total,desc=f'==> 最后集成处理',mininterval=0.3) as pbar:
-                for i,img_path in enumerate(test['path']):
+                for i,img_path in enumerate(test['image']):
                     # 第一次后处理未涉及的难样本 index
                     # 第一次后处理 - 将预测概率值大于 threshold 的样本作为分类的类别
                     threshold_prob = 0.6
@@ -233,9 +234,9 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshol
                     test.iloc[i,1] = pred.classes[res]
                     pbar.update(1)
     else:
-        pred.load_model(net)
+        pred.load_model(net, num_classes=num_classes)
         with tqdm(total=total,desc=f'==> Predict Pictures {total}',mininterval=0.3) as pbar:
-            for i,img_path in enumerate(test['path']):
+            for i,img_path in enumerate(test['image']):
                 pre = pred.predict(image_path=root + img_path)
                 test.iloc[i,1] = pre['class']
                 pbar.update(1)
@@ -246,23 +247,25 @@ def save_csv(csv_path = 'submit.csv',net = 'ConvNeXt-B', type = 'vote', threshol
 import argparse    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Classification Predict')
-    parser.add_argument('--net', '--model', '-net', '-model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
-                                                       'ResNet34','ResNet50','ResNet101',   
-                                                       'DenseNet','DenseNet121','DenseNet169','DenseNet201',
+    parser.add_argument('--net', '--model', type = str, choices=['LeNet5', 'AlexNet', 'VGG16','VGG19',
+                                                       'ResNet18','ResNet34','ResNet50','ResNet101',   
+                                                       'DenseNet','DenseNet121','DenseNet161','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
+                                                       'HRNet-w18','HRNet-w18-S','HRNet-w18-Sv2','HRNet-w30','HRNet-w32','HRNet-w40','HRNet-w44','HRNet-w48','HRNet-w64',
                                                        'ResNeXt50-32x4d','ResNeXt101-32x8d',
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
-                                                       'EfficientNetv2-S','EfficientNetv2-M','EfficientNetv2-L','EfficientNetv2-XL',
+                                                       'Efficientv2-b0','Efficientv2-b1','Efficientv2-b2','Efficientv2-b3',
+                                                       'Efficientv2-T','Efficientv2-S','Efficientv2-M','Efficientv2-L','Efficientv2-XL',
                                                        'ConvNeXt-T','ConvNeXt-S','ConvNeXt-B','ConvNeXt-L','ConvNeXt-XL',
-                                                       'Swin-B','Swin-L',
+                                                       'Swin-T','Swin-S','Swin-B','Swin-L',
                                                        'ViT-B','ViT-L','ViT-H',
                                                        'CaiT-s24','CaiT-xxs24','CaiT-xxs36',
-                                                       'DeiT-B','DeiT-T','DeiT-S',
+                                                       'DeiT-T','DeiT-S','DeiT-B',
                                                        'BiT-M-resnet152x4','BiT-M-resnet152x2','BiT-M-resnet101x3','BiT-M-resnet101x1',
                                                        'ensemble'], default='ensemble', help='net/model type 模型的类别')
     parser.add_argument('--type','-t',type=str, choices=['mean','vote'],default = 'vote',  help='Ensemble type 集成模型形式')
-    parser.add_argument('--num-classes', '-nc',type = int, default=3, help = '分类的类别')
-    parser.add_argument('--threshold', '-td', type = float, default= 98.5, help = '设置选择模型的准确率的阈值')
+    parser.add_argument('--num-classes', '-nc',type = int, default=2, help = '分类的类别')
+    parser.add_argument('--threshold', '-td', type = float, default= 90, help = '设置选择模型的准确率的阈值')
     args = parser.parse_args()
     print(args)
 
@@ -272,7 +275,7 @@ if __name__ == '__main__':
     type = args.type
     threshold = args.threshold
     from datetime import datetime
-    if type == 'mean':
+    if type == 'mean' and net == 'ensemble':
         csv_path = 'submit_{}_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"),threshold)
     else:
         csv_path = 'submit_{}_{}_{}.csv'.format(net,type,datetime.now().strftime("%m-%d-%H-%M-%S"))

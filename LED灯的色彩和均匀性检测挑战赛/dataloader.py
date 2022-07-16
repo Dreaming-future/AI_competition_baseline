@@ -11,21 +11,24 @@ def get_train_val_split_data( train_set, train_split = 0.8):
     num_train = len(train_set)
     indices = list(range(num_train))
     split = int(num_train * train_split)
+    import random
+    random.seed(1)
+    random.shuffle(indices)
     train_idx, val_idx = indices[:split], indices[split:]
     train_dataset = torch.utils.data.Subset(train_set,train_idx)
     val_dataset = torch.utils.data.Subset(train_set, val_idx)
     return train_dataset, val_dataset
 
 # Data
-def get_training_val_dataloader(batch_size = 64, num_workers = 4, shuffle = True, resize = 224, root = './data//'):
+def get_training_dataloader(batch_size = 64, num_workers = 4, shuffle = True, resize = 224, root = './data//'):
     print('==> Preparing Train data..')
     transform_train = transforms.Compose([
-        transforms.Resize(resize),
+        transforms.Resize((384,288)),
         # transforms.RandomCrop(resize, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.RandomInvert(),
         transforms.RandomVerticalFlip(),
-        transforms.RandomRotations(30),
+        transforms.RandomRotation(30),
         transforms.ToTensor(),
         transforms.Normalize(image_mean, image_std),
     ])
@@ -42,7 +45,7 @@ def get_training_val_dataloader(batch_size = 64, num_workers = 4, shuffle = True
 def get_val_dataloader(batch_size = 64, num_workers = 4, shuffle = False, resize = 224, root = './data//'): 
     print('==> Preparing Test data..')   
     transform_test = transforms.Compose([
-        transforms.Resize(resize),
+        transforms.Resize((384,288)),
         transforms.ToTensor(),
         transforms.Normalize(image_mean, image_std),
     ])

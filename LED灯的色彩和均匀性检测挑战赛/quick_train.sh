@@ -1,3 +1,3 @@
-CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ConvNeXt-B --num-workers 8 --epochs 50 -fe 20
-CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net Swin-L --num-workers 8 --epochs 50 -fe 20
-CUDA_VISIBLE_DEVICES=1 python train.py -f --cuda --net ViT-B --num-workers 8 --epochs 50 -fe 20
+CUDA_VISIBLE_DEVICES=2 python train.py --cuda --net Efficientv2-b0 --epochs 50 -bs 8 -lr 0.0005 -p 10 
+CUDA_VISIBLE_DEVICES=2 python train.py --cuda --net Efficientv2-b1 --epochs 50 -bs 8 -lr 0.0005 -fe 10 -p 10
+CUDA_VISIBLE_DEVICES=2 python train.py --cuda --net Efficientv2-b2 --epochs 50 -bs 8 -lr 0.0005 -fe 10 -p 10

@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils import Get_model, LabelSmoothCELoss, empty_cache
+from utils import Get_model, LabelSmoothCELoss, empty_cache, focal_loss
 import os
 import argparse
 from utils import get_acc,EarlyStopping,remove_prefix
@@ -23,6 +23,7 @@ if __name__ == '__main__':
                                                        'ResNet18','ResNet34','ResNet50','ResNet101',   
                                                        'DenseNet','DenseNet121','DenseNet161','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
+                                                       'HRNet-w18','HRNet-w18-S','HRNet-w18-Sv2','HRNet-w30','HRNet-w32','HRNet-w40','HRNet-w44','HRNet-w48','HRNet-w64',
                                                        'ResNeXt50-32x4d','ResNeXt101-32x8d',
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
                                                        'Efficientv2-b0','Efficientv2-b1','Efficientv2-b2','Efficientv2-b3',
@@ -52,7 +53,10 @@ if __name__ == '__main__':
 
     num_classes = args.num_classes
     freeze = args.f # 是否冻结训练
-    freeze_epoch = args.fe
+    if freeze:
+        freeze_epoch = args.fe
+    else:
+        freeze_epoch = 0
     epochs = args.epochs
     fp16 = args.fp16
     resume = args.resume
@@ -119,6 +123,7 @@ if __name__ == '__main__':
     early_stopping = EarlyStopping(patience = patience, verbose=True)
     loss_fn = nn.CrossEntropyLoss()
     loss_fn = LabelSmoothCELoss()
+    loss_fn = focal_loss(num_classes=2)
     if args.optim == 'adamw':
         optimizer = optim.AdamW(net.parameters(), lr= lr)
     elif args.optim == 'adam':

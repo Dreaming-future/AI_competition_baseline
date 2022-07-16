@@ -193,7 +193,7 @@ def fit_one_epoch_val(net, epoch, freeze_epoch, epochs, val_loader, optimizer, l
         best_acc = val_acc
         
     print('Finish Val')
-    if freeze_epoch < epoch:
+    if freeze_epoch <= epoch:
         early_stopping(val_loss, net)
         # 若满足 early stopping 要求
         if early_stopping.early_stop:
