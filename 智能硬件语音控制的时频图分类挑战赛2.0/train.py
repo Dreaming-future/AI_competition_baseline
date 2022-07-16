@@ -23,6 +23,7 @@ if __name__ == '__main__':
                                                        'ResNet18','ResNet34','ResNet50','ResNet101',   
                                                        'DenseNet','DenseNet121','DenseNet161','DenseNet169','DenseNet201',
                                                        'MobileNetv1','MobileNetv2',
+                                                       'HRNet-w18','HRNet-w18-S','HRNet-w18-Sv2','HRNet-w30','HRNet-w32','HRNet-w40','HRNet-w44','HRNet-w48','HRNet-w64',
                                                        'ResNeXt50-32x4d','ResNeXt101-32x8d',
                                                        'EfficientNet-b0','EfficientNet-b1','EfficientNet-b2','EfficientNet-b3','EfficientNet-b4','EfficienNet-b5','EfficientNet-b6','EfficientNet-b7','EfficientNet-b8',
                                                        'Efficientv2-b0','Efficientv2-b1','Efficientv2-b2','Efficientv2-b3',
